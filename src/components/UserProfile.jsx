@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ArrowLeft, MessageCircle, UserPlus, Star, Award, Heart, Flame, Smile, Check, X } from 'lucide-react';
 
-export default function UserProfile({ profile, onClose, posts, onUpdateProfile, showToast, appointments, setAppointments }) {
+export default function UserProfile({ profile, onClose, posts, onUpdateProfile, showToast, appointments, setAppointments, myProfile }) {
   const [isEditing, setIsEditing] = useState(false);
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [bookingDate, setBookingDate] = useState('');
@@ -12,6 +12,16 @@ export default function UserProfile({ profile, onClose, posts, onUpdateProfile, 
   const [editPhone, setEditPhone] = useState(profile.phone || '');
   const [editBirthday, setEditBirthday] = useState(profile.birthday || '');
   const [editGender, setEditGender] = useState(profile.gender || 'Nam');
+  const [editHeight, setEditHeight] = useState(profile.height || '');
+  const [editWeight, setEditWeight] = useState(profile.weight || '');
+
+  // PT Specific states
+  const [editExp, setEditExp] = useState(profile.exp || '');
+  const [editPrice, setEditPrice] = useState(profile.price || '');
+  const [editTag1, setEditTag1] = useState(profile.spec?.[0] || '');
+  const [editTag2, setEditTag2] = useState(profile.spec?.[1] || '');
+  const [editTag3, setEditTag3] = useState(profile.spec?.[2] || '');
+  const [editTag4, setEditTag4] = useState(profile.spec?.[3] || '');
 
   // Filter posts created by this profile
   const authorName = profile.name;
@@ -49,6 +59,8 @@ export default function UserProfile({ profile, onClose, posts, onUpdateProfile, 
     const newAppt = {
       id: Date.now(),
       ptName: profile.name,
+      userName: myProfile?.name?.replace('(Bạn)', '').trim() || 'Hùng',
+      userAvatar: myProfile?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=60',
       date: bookingDate,
       time: bookingTime,
       status: 'Đợi xác nhận'
@@ -68,12 +80,27 @@ export default function UserProfile({ profile, onClose, posts, onUpdateProfile, 
   const handleSaveEdit = (e) => {
     e.preventDefault();
     if (onUpdateProfile) {
-      onUpdateProfile({
+      const updatedFields = {
         bio: editBio,
         phone: editPhone,
         birthday: editBirthday,
-        gender: editGender
-      });
+        gender: editGender,
+        height: editHeight,
+        weight: editWeight
+      };
+
+      if (profile.isPt) {
+        updatedFields.exp = editExp;
+        updatedFields.price = editPrice;
+        
+        // Filter out empty tag inputs
+        const specTags = [editTag1, editTag2, editTag3, editTag4]
+          .map(t => t.trim())
+          .filter(t => t !== '');
+        updatedFields.spec = specTags;
+      }
+
+      onUpdateProfile(updatedFields);
     }
     setIsEditing(false);
     if (showToast) {
@@ -172,10 +199,11 @@ export default function UserProfile({ profile, onClose, posts, onUpdateProfile, 
         {isEditing ? (
           <form onSubmit={handleSaveEdit} style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '20px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <label style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>Lời giới thiệu (Bio):</label>
+              <label style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>Mục tiêu tập luyện:</label>
               <textarea 
                 value={editBio}
                 onChange={(e) => setEditBio(e.target.value)}
+                placeholder="Ví dụ: Đạt body 6 múi, tăng cơ giảm mỡ..."
                 style={{
                   background: 'rgba(255, 255, 255, 0.03)',
                   border: '1px solid var(--border-color)',
@@ -187,6 +215,44 @@ export default function UserProfile({ profile, onClose, posts, onUpdateProfile, 
                   outline: 'none',
                   minHeight: '60px',
                   resize: 'vertical'
+                }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>Chiều cao:</label>
+              <input 
+                type="text"
+                placeholder="Ví dụ: 175 cm"
+                value={editHeight}
+                onChange={(e) => setEditHeight(e.target.value)}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.03)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '10px',
+                  padding: '8px 10px',
+                  color: 'white',
+                  fontSize: '12.5px',
+                  outline: 'none'
+                }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>Cân nặng:</label>
+              <input 
+                type="text"
+                placeholder="Ví dụ: 70 kg"
+                value={editWeight}
+                onChange={(e) => setEditWeight(e.target.value)}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.03)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '10px',
+                  padding: '8px 10px',
+                  color: 'white',
+                  fontSize: '12.5px',
+                  outline: 'none'
                 }}
               />
             </div>
@@ -249,6 +315,114 @@ export default function UserProfile({ profile, onClose, posts, onUpdateProfile, 
               </select>
             </div>
 
+            {profile.isPt && (
+              <>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>Kinh nghiệm:</label>
+                  <input 
+                    type="text"
+                    placeholder="Ví dụ: 3 năm kinh nghiệm"
+                    value={editExp}
+                    onChange={(e) => setEditExp(e.target.value)}
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.03)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '10px',
+                      padding: '8px 10px',
+                      color: 'white',
+                      fontSize: '12.5px',
+                      outline: 'none'
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>Giá thuê:</label>
+                  <input 
+                    type="text"
+                    placeholder="Ví dụ: 300.000đ/buổi"
+                    value={editPrice}
+                    onChange={(e) => setEditPrice(e.target.value)}
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.03)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '10px',
+                      padding: '8px 10px',
+                      color: 'white',
+                      fontSize: '12.5px',
+                      outline: 'none'
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>Chuyên môn (Tối đa 4 tags):</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                    <input 
+                      type="text"
+                      placeholder="Tag 1 (Ví dụ: Calisthenics)"
+                      value={editTag1}
+                      onChange={(e) => setEditTag1(e.target.value)}
+                      style={{
+                        background: 'rgba(255, 255, 255, 0.03)',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '8px',
+                        padding: '6px 10px',
+                        color: 'white',
+                        fontSize: '11.5px',
+                        outline: 'none'
+                      }}
+                    />
+                    <input 
+                      type="text"
+                      placeholder="Tag 2 (Ví dụ: Giảm cân)"
+                      value={editTag2}
+                      onChange={(e) => setEditTag2(e.target.value)}
+                      style={{
+                        background: 'rgba(255, 255, 255, 0.03)',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '8px',
+                        padding: '6px 10px',
+                        color: 'white',
+                        fontSize: '11.5px',
+                        outline: 'none'
+                      }}
+                    />
+                    <input 
+                      type="text"
+                      placeholder="Tag 3 (Ví dụ: Tăng cơ)"
+                      value={editTag3}
+                      onChange={(e) => setEditTag3(e.target.value)}
+                      style={{
+                        background: 'rgba(255, 255, 255, 0.03)',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '8px',
+                        padding: '6px 10px',
+                        color: 'white',
+                        fontSize: '11.5px',
+                        outline: 'none'
+                      }}
+                    />
+                    <input 
+                      type="text"
+                      placeholder="Tag 4 (Ví dụ: Sức bền)"
+                      value={editTag4}
+                      onChange={(e) => setEditTag4(e.target.value)}
+                      style={{
+                        background: 'rgba(255, 255, 255, 0.03)',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '8px',
+                        padding: '6px 10px',
+                        color: 'white',
+                        fontSize: '11.5px',
+                        outline: 'none'
+                      }}
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+
             <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
               <button 
                 type="button" 
@@ -278,7 +452,7 @@ export default function UserProfile({ profile, onClose, posts, onUpdateProfile, 
               </div>
 
               <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
-                {profile.bio || 'Chưa cập nhật giới thiệu.'}
+                <span style={{ fontWeight: 700, color: 'var(--accent-green)' }}>🎯 Mục tiêu:</span> {profile.bio || 'Chưa cập nhật mục tiêu.'}
               </p>
 
               {profile.isPt && (
@@ -343,6 +517,14 @@ export default function UserProfile({ profile, onClose, posts, onUpdateProfile, 
                 Thông tin chi tiết
               </h4>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--text-secondary)' }}>📏 Chiều cao:</span>
+                <span style={{ fontWeight: 600 }}>{profile.height || 'Chưa cập nhật'}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--text-secondary)' }}>⚖️ Cân nặng:</span>
+                <span style={{ fontWeight: 600 }}>{profile.weight || 'Chưa cập nhật'}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span style={{ color: 'var(--text-secondary)' }}>📞 Số điện thoại:</span>
                 <span style={{ fontWeight: 600 }}>{profile.phone || 'Chưa cập nhật'}</span>
               </div>
@@ -354,96 +536,6 @@ export default function UserProfile({ profile, onClose, posts, onUpdateProfile, 
                 <span style={{ color: 'var(--text-secondary)' }}>🚻 Giới tính:</span>
                 <span style={{ fontWeight: 600 }}>{profile.gender || 'Chưa cập nhật'}</span>
               </div>
-            </div>
-
-            {/* Stats Row */}
-            <div className="glass-card" style={{ 
-              display: 'grid', 
-              gridTemplateColumns: 'repeat(3, 1fr)', 
-              textAlign: 'center', 
-              padding: '12px 6px',
-              marginBottom: '20px'
-            }}>
-              <div>
-                <div style={{ fontSize: '16px', fontWeight: 800 }}>{userPosts.length}</div>
-                <div className="subtitle" style={{ fontSize: '10px' }}>Bài đăng</div>
-              </div>
-              <div>
-                <div style={{ fontSize: '16px', fontWeight: 800 }}>{profile.isPt ? '48' : '15'}</div>
-                <div className="subtitle" style={{ fontSize: '10px' }}>{profile.isPt ? 'Học viên' : 'Streak tập'}</div>
-              </div>
-              <div>
-                <div style={{ fontSize: '16px', fontWeight: 800, color: 'var(--accent-green)' }}>
-                  {profile.isPt ? '4.9★' : '120'}
-                </div>
-                <div className="subtitle" style={{ fontSize: '10px' }}>{profile.isPt ? 'Đánh giá' : 'Điểm kết nối'}</div>
-              </div>
-            </div>
-
-            {/* User's Post Feed */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <h3 className="title-medium" style={{ fontSize: '14px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
-                Bài đăng của {profile.name.split(' ').pop()}
-              </h3>
-
-              {userPosts.length > 0 ? (
-                userPosts.map((post) => (
-                  <div key={post.id} className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                      <img 
-                        src={post.avatar}
-                        alt={post.author}
-                        style={{
-                          width: '32px',
-                          height: '32px',
-                          borderRadius: '50%',
-                          objectFit: 'cover',
-                          border: '1px solid rgba(255, 255, 255, 0.1)'
-                        }}
-                      />
-                      <div>
-                        <div style={{ fontSize: '12px', fontWeight: 700 }}>{post.author}</div>
-                        <div style={{ fontSize: '9px', color: 'var(--text-secondary)' }}>{post.time}</div>
-                      </div>
-                    </div>
-
-                    <p style={{ fontSize: '12px', color: 'var(--text-primary)', lineHeight: '1.4' }}>
-                      {post.content}
-                    </p>
-
-                    {post.image && (
-                      <img 
-                        src={post.image} 
-                        alt="Attached media" 
-                        style={{
-                          width: '100%',
-                          maxHeight: '160px',
-                          borderRadius: '12px',
-                          objectFit: 'cover',
-                          marginTop: '4px',
-                          border: '1px solid rgba(255, 255, 255, 0.05)'
-                        }}
-                      />
-                    )}
-
-                    <div style={{ display: 'flex', gap: '6px', borderTop: '1px solid var(--border-color)', paddingTop: '6px', marginTop: '2px' }}>
-                      <span style={{ fontSize: '10px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '3px' }}>
-                        ❤️ {post.reactions.love}
-                      </span>
-                      <span style={{ fontSize: '10px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '3px' }}>
-                        🔥 {post.reactions.fire}
-                      </span>
-                      <span style={{ fontSize: '10px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '3px' }}>
-                        😆 {post.reactions.haha}
-                      </span>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="subtitle" style={{ textAlign: 'center', padding: '20px 0' }}>
-                  Chưa có bài đăng nào trên cộng đồng.
-                </p>
-              )}
             </div>
           </>
         )}

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ArrowLeft, Calendar, Clock, User, Check, X, Trash2, AlertCircle, Sparkles, CheckCircle2, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
 
-export default function Appointments({ appointments, setAppointments, onClose, setScreen }) {
+export default function Appointments({ appointments, setAppointments, onClose, setScreen, myProfile }) {
   // Initialize to June 2026 (Month 5 because 0-indexed)
   const [currentMonth, setCurrentMonth] = useState(5);
   const [currentYear, setCurrentYear] = useState(2026);
@@ -90,6 +90,13 @@ export default function Appointments({ appointments, setAppointments, onClose, s
   // Status Badge Colors & Info
   const getStatusStyle = (status) => {
     switch (status) {
+      case 'Từ chối':
+        return {
+          bg: 'rgba(255, 87, 34, 0.1)',
+          color: 'var(--accent-orange)',
+          border: '1px solid rgba(255, 87, 34, 0.2)',
+          dot: 'var(--accent-orange)'
+        };
       case 'Đợi xác nhận':
         return {
           bg: 'rgba(255, 87, 34, 0.15)',
@@ -129,12 +136,23 @@ export default function Appointments({ appointments, setAppointments, onClose, s
   };
 
   // Filter list of appointments to show either the selected day or all appointments of the active month
+  const activeMonthAppointments = appointments.filter(app => {
+    const [appY, appM] = app.date.split('-');
+    const matchesDate = parseInt(appY) === currentYear && parseInt(appM) === (currentMonth + 1);
+    if (!matchesDate) return false;
+
+    // If logged in as PT, only show requests made to this PT
+    if (myProfile?.isPt) {
+      const cleanPtName = myProfile.name.replace('(Bạn)', '').trim().toLowerCase();
+      const cleanApptPtName = app.ptName.replace('(Bạn)', '').trim().toLowerCase();
+      return cleanPtName === cleanApptPtName;
+    }
+    return true;
+  });
+
   const filteredAppointments = viewAll 
-    ? appointments.filter(app => {
-        const [appY, appM] = app.date.split('-');
-        return parseInt(appY) === currentYear && parseInt(appM) === (currentMonth + 1);
-      }) 
-    : appointments.filter(app => app.date === selectedDate);
+    ? activeMonthAppointments
+    : activeMonthAppointments.filter(app => app.date === selectedDate);
 
   // Calendar dates generation
   const daysArray = [];
@@ -146,10 +164,7 @@ export default function Appointments({ appointments, setAppointments, onClose, s
   }
 
   // Count total appointments in currently viewed month
-  const monthAppointmentsCount = appointments.filter(app => {
-    const [appY, appM] = app.date.split('-');
-    return parseInt(appY) === currentYear && parseInt(appM) === (currentMonth + 1);
-  }).length;
+  const monthAppointmentsCount = activeMonthAppointments.length;
 
   return (
     <div className="screen-content animate-slide-up" style={{ padding: 0, display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -395,13 +410,17 @@ export default function Appointments({ appointments, setAppointments, onClose, s
           {filteredAppointments.length > 0 ? (
             filteredAppointments.map((appt) => {
               const statusStyle = getStatusStyle(appt.status);
-              
-              // Get PT Details
-              const getPtAvatar = (name) => {
-                if (name === 'Mai Xuân Tú') return 'https://images.unsplash.com/photo-1548690312-e3b507d8c110?w=150&auto=format&fit=crop&q=60';
-                if (name === 'Nguyễn Minh Khang') return 'https://images.unsplash.com/photo-1567013127542-490d757e51fc?w=150&auto=format&fit=crop&q=60';
-                return 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=60'; // default PT avatar
-              };
+              const isPT = myProfile?.isPt;
+              const titleText = isPT 
+                ? `Học viên: ${appt.userName || 'Hùng'}` 
+                : `HLV ${appt.ptName}`;
+              const avatarUrl = isPT 
+                ? (appt.userAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=60')
+                : (appt.ptName === 'Mai Xuân Tú' 
+                    ? 'https://images.unsplash.com/photo-1548690312-e3b507d8c110?w=150&auto=format&fit=crop&q=60'
+                    : (appt.ptName === 'Nguyễn Minh Khang'
+                        ? 'https://images.unsplash.com/photo-1567013127542-490d757e51fc?w=150&auto=format&fit=crop&q=60'
+                        : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=60'));
 
               return (
                 <div 
@@ -418,13 +437,13 @@ export default function Appointments({ appointments, setAppointments, onClose, s
                   {/* Top card metadata */}
                   <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                     <img 
-                      src={getPtAvatar(appt.ptName)} 
-                      alt={appt.ptName} 
+                      src={avatarUrl} 
+                      alt={titleText} 
                       style={{ width: '40px', height: '40px', borderRadius: '10px', objectFit: 'cover' }}
                     />
                     <div style={{ flex: 1 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <span style={{ fontSize: '13px', fontWeight: 700 }}>HLV {appt.ptName}</span>
+                        <span style={{ fontSize: '13px', fontWeight: 700 }}>{titleText}</span>
                         <span style={{
                           fontSize: '9px',
                           fontWeight: 700,
@@ -450,7 +469,7 @@ export default function Appointments({ appointments, setAppointments, onClose, s
                     </div>
                   </div>
 
-                  {/* Simulator Controls - Labeled clearly as PT Simulator Actions */}
+                  {/* Actions Container */}
                   <div style={{ 
                     marginTop: '2px', 
                     background: 'rgba(0,0,0,0.15)', 
@@ -458,125 +477,207 @@ export default function Appointments({ appointments, setAppointments, onClose, s
                     borderRadius: '10px', 
                     border: '1px solid rgba(255,255,255,0.03)' 
                   }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '9.5px', color: 'var(--text-secondary)', fontWeight: 700 }}>
-                      <RefreshCw size={11} className="animate-spin-slow" />
-                      <span>GIẢ LẬP HÀNH ĐỘNG CỦA HLV (PT)</span>
-                    </div>
+                    {isPT ? (
+                      // PT Role Action Controls
+                      <>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '9.5px', color: 'var(--text-secondary)', fontWeight: 700 }}>
+                          <CheckCircle2 size={11} color="var(--accent-green)" />
+                          <span>HÀNH ĐỘNG CỦA BẠN (HLV)</span>
+                        </div>
+                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                          {appt.status === 'Đợi xác nhận' && (
+                            <>
+                              <button
+                                onClick={() => updateStatus(appt.id, 'Đã hẹn')}
+                                style={{
+                                  flex: 1.5,
+                                  padding: '6px 10px',
+                                  borderRadius: '6px',
+                                  background: 'rgba(57, 255, 20, 0.1)',
+                                  border: '1px solid rgba(57, 255, 20, 0.3)',
+                                  color: 'var(--accent-green)',
+                                  fontSize: '11px',
+                                  fontWeight: 600,
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  gap: '4px'
+                                }}
+                              >
+                                <Check size={11} /> Xác nhận hẹn
+                              </button>
+                              <button
+                                onClick={() => updateStatus(appt.id, 'Từ chối')}
+                                style={{
+                                  flex: 1,
+                                  padding: '6px 8px',
+                                  borderRadius: '6px',
+                                  background: 'rgba(255, 87, 34, 0.1)',
+                                  border: '1px solid rgba(255, 87, 34, 0.3)',
+                                  color: 'var(--accent-orange)',
+                                  fontSize: '11px',
+                                  fontWeight: 600,
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  gap: '4px'
+                                }}
+                              >
+                                <X size={11} /> Từ chối
+                              </button>
+                            </>
+                          )}
 
-                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                      {appt.status === 'Đợi xác nhận' && (
-                        <>
-                          <button
-                            onClick={() => updateStatus(appt.id, 'Đã hẹn')}
-                            style={{
-                              flex: 1.5,
-                              padding: '6px 10px',
-                              borderRadius: '6px',
-                              background: 'rgba(57, 255, 20, 0.1)',
-                              border: '1px solid rgba(57, 255, 20, 0.3)',
-                              color: 'var(--accent-green)',
-                              fontSize: '11px',
-                              fontWeight: 600,
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              gap: '4px'
-                            }}
-                          >
-                            <Check size={11} /> HLV Đồng ý
-                          </button>
-                          <button
-                            onClick={() => deleteAppointment(appt.id)}
-                            style={{
-                              flex: 1,
-                              padding: '6px 8px',
-                              borderRadius: '6px',
-                              background: 'rgba(255, 87, 34, 0.1)',
-                              border: '1px solid rgba(255, 87, 34, 0.3)',
-                              color: 'var(--accent-orange)',
-                              fontSize: '11px',
-                              fontWeight: 600,
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              gap: '4px'
-                            }}
-                          >
-                            <X size={11} /> Từ chối
-                          </button>
-                        </>
-                      )}
+                          {appt.status === 'Đã hẹn' && (
+                            <>
+                              <button
+                                onClick={() => updateStatus(appt.id, 'Đã xong')}
+                                style={{
+                                  flex: 1,
+                                  padding: '6px 10px',
+                                  borderRadius: '6px',
+                                  background: 'rgba(57, 255, 20, 0.1)',
+                                  border: '1px solid rgba(57, 255, 20, 0.3)',
+                                  color: 'var(--accent-green)',
+                                  fontSize: '11px',
+                                  fontWeight: 600,
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  gap: '4px'
+                                }}
+                              >
+                                <CheckCircle2 size={11} /> Đã hoàn thành
+                              </button>
+                              <button
+                                onClick={() => updateStatus(appt.id, 'Trễ hẹn')}
+                                style={{
+                                  flex: 1,
+                                  padding: '6px 10px',
+                                  borderRadius: '6px',
+                                  background: 'rgba(255, 61, 0, 0.1)',
+                                  border: '1px solid rgba(255, 61, 0, 0.3)',
+                                  color: '#ff3d00',
+                                  fontSize: '11px',
+                                  fontWeight: 600,
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  gap: '4px'
+                                }}
+                              >
+                                <AlertCircle size={11} /> Trễ / Vắng mặt
+                              </button>
+                            </>
+                          )}
 
-                      {appt.status === 'Đã hẹn' && (
-                        <>
-                          <button
-                            onClick={() => updateStatus(appt.id, 'Đã xong')}
-                            style={{
-                              flex: 1,
-                              padding: '6px 10px',
-                              borderRadius: '6px',
-                              background: 'rgba(255, 255, 255, 0.05)',
-                              border: '1px solid rgba(255, 255, 255, 0.15)',
-                              color: 'white',
-                              fontSize: '11px',
-                              fontWeight: 600,
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              gap: '4px'
-                            }}
-                          >
-                            <CheckCircle2 size={11} /> Tập Xong
-                          </button>
-                          <button
-                            onClick={() => updateStatus(appt.id, 'Trễ hẹn')}
-                            style={{
-                              flex: 1,
-                              padding: '6px 10px',
-                              borderRadius: '6px',
-                              background: 'rgba(255, 61, 0, 0.1)',
-                              border: '1px solid rgba(255, 61, 0, 0.3)',
-                              color: '#ff3d00',
-                              fontSize: '11px',
-                              fontWeight: 600,
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              gap: '4px'
-                            }}
-                          >
-                            <AlertCircle size={11} /> Trễ / Vắng
-                          </button>
-                        </>
-                      )}
+                          {(appt.status === 'Đã xong' || appt.status === 'Trễ hẹn' || appt.status === 'Từ chối') && (
+                            <button
+                              onClick={() => deleteAppointment(appt.id)}
+                              style={{
+                                flex: 1,
+                                padding: '6px 10px',
+                                borderRadius: '6px',
+                                background: 'rgba(255, 255, 255, 0.03)',
+                                border: '1px solid var(--border-color)',
+                                color: 'var(--text-secondary)',
+                                fontSize: '11px',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '4px'
+                              }}
+                            >
+                              <Trash2 size={11} /> Xóa lịch sử cuộc hẹn
+                            </button>
+                          )}
+                        </div>
+                      </>
+                    ) : (
+                      // User Role Action Controls
+                      <>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '9.5px', color: 'var(--text-secondary)', fontWeight: 700 }}>
+                          <User size={11} color="var(--accent-green)" />
+                          <span>HÀNH ĐỘNG CỦA BẠN (HỘI VIÊN)</span>
+                        </div>
+                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                          {appt.status === 'Đợi xác nhận' && (
+                            <button
+                              onClick={() => deleteAppointment(appt.id)}
+                              style={{
+                                flex: 1,
+                                padding: '6px 10px',
+                                borderRadius: '6px',
+                                background: 'rgba(255, 87, 34, 0.08)',
+                                border: '1px solid rgba(255, 87, 34, 0.2)',
+                                color: 'var(--accent-orange)',
+                                fontSize: '11px',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '4px'
+                              }}
+                            >
+                              <X size={11} /> Hủy yêu cầu đặt lịch
+                            </button>
+                          )}
 
-                      {(appt.status === 'Đã xong' || appt.status === 'Trễ hẹn') && (
-                        <button
-                          onClick={() => deleteAppointment(appt.id)}
-                          style={{
-                            flex: 1,
-                            padding: '6px 10px',
-                            borderRadius: '6px',
-                            background: 'rgba(255, 255, 255, 0.03)',
-                            border: '1px solid var(--border-color)',
-                            color: 'var(--text-secondary)',
-                            fontSize: '11px',
-                            fontWeight: 600,
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '4px'
-                          }}
-                        >
-                          <Trash2 size={11} /> Xóa lịch sử này
-                        </button>
-                      )}
-                    </div>
+                          {appt.status === 'Đã hẹn' && (
+                            <button
+                              onClick={() => deleteAppointment(appt.id)}
+                              style={{
+                                flex: 1,
+                                padding: '6px 10px',
+                                borderRadius: '6px',
+                                background: 'rgba(255, 87, 34, 0.08)',
+                                border: '1px solid rgba(255, 87, 34, 0.2)',
+                                color: 'var(--accent-orange)',
+                                fontSize: '11px',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '4px'
+                              }}
+                            >
+                              <X size={11} /> Hủy lịch tập này
+                            </button>
+                          )}
+
+                          {(appt.status === 'Đã xong' || appt.status === 'Trễ hẹn' || appt.status === 'Từ chối') && (
+                            <button
+                              onClick={() => deleteAppointment(appt.id)}
+                              style={{
+                                flex: 1,
+                                padding: '6px 10px',
+                                borderRadius: '6px',
+                                background: 'rgba(255, 255, 255, 0.03)',
+                                border: '1px solid var(--border-color)',
+                                color: 'var(--text-secondary)',
+                                fontSize: '11px',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '4px'
+                              }}
+                            >
+                              <Trash2 size={11} /> Xóa lịch sử cuộc hẹn
+                            </button>
+                          )}
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
               );

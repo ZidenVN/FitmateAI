@@ -8,8 +8,10 @@ import PtMarketplace from './components/PtMarketplace';
 import UserProfile from './components/UserProfile';
 import Messenger from './components/Messenger';
 import Appointments from './components/Appointments';
+import Auth from './components/Auth';
 
 export default function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [screen, setScreen] = useState('dashboard');
   const [caloriesConsumed, setCaloriesConsumed] = useState(1250);
   const [caloriesBurned, setCaloriesBurned] = useState(0);
@@ -39,10 +41,12 @@ export default function App() {
     name: 'Hùng (Bạn)',
     role: 'Hội viên',
     avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=60',
-    bio: 'Đam mê thể hình, đang học tập tại FPT University. Quyết tâm hoàn thành kế hoạch dinh dưỡng của FitMate để đạt body mong muốn! 🏋️‍♂️🔥',
+    bio: 'Đạt body 6 múi, cải thiện sức bền bỉ và thâm hụt mỡ bụng! 🏋️‍♂️🔥',
     phone: '0912345678',
     birthday: '15/05/2004',
     gender: 'Nam',
+    height: '175 cm',
+    weight: '70 kg',
     isPt: false,
     isSelf: true
   });
@@ -53,10 +57,12 @@ export default function App() {
       name: 'Hoàng Gia Bảo',
       role: 'Leader CoreCrafter',
       avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=60',
-      bio: 'CoreCrafter Leader. Gym & Calisthenics lover. Slogan: Vượt qua giới hạn! 🔥💪',
+      bio: 'Tăng 5kg cơ bắp, cải thiện kỹ năng Planche và Handstand! 🔥💪',
       phone: '0987654321',
       birthday: '12/03/2005',
       gender: 'Nam',
+      height: '172 cm',
+      weight: '65 kg',
       isPt: false,
       isSelf: false
     },
@@ -64,10 +70,12 @@ export default function App() {
       name: 'Nguyễn Phúc Thịnh',
       role: 'Thành viên',
       avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=60',
-      bio: 'Đam mê quét calo món ăn Việt. Slogan: Ăn sạch sống khỏe! 🍜🥗',
+      bio: 'Giảm 4kg mỡ thừa, duy trì lối sống lành mạnh ăn sạch sống khỏe! 🍜🥗',
       phone: '0901234567',
       birthday: '25/08/2004',
       gender: 'Nam',
+      height: '178 cm',
+      weight: '72 kg',
       isPt: false,
       isSelf: false
     },
@@ -75,10 +83,12 @@ export default function App() {
       name: 'Nguyễn Đào Tùng Lâm',
       role: 'Thành viên',
       avatar: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=150&auto=format&fit=crop&q=60',
-      bio: 'Thích tập tạ nặng. Slogan: Không thử sao biết! 🏋️‍♂️✨',
+      bio: 'Đạt mốc Bench Press 100kg và cải thiện sức mạnh thân dưới! 🏋️‍♂️✨',
       phone: '0934567890',
       birthday: '09/09/2003',
       gender: 'Nam',
+      height: '180 cm',
+      weight: '82 kg',
       isPt: false,
       isSelf: false
     },
@@ -86,10 +96,12 @@ export default function App() {
       name: 'Mai Xuân Tú',
       role: 'Huấn luyện viên',
       avatar: 'https://images.unsplash.com/photo-1548690312-e3b507d8c110?w=150&auto=format&fit=crop&q=60',
-      bio: 'Huấn luyện viên Calisthenics chuyên nghiệp. Giúp bạn đạt mục tiêu hình thể tối ưu.',
+      bio: 'Giúp học viên đạt mục tiêu hình thể Calisthenics tối ưu, xây dựng lối sống lành mạnh.',
       phone: '0368947538',
       birthday: '20/10/1998',
       gender: 'Nam',
+      height: '174 cm',
+      weight: '68 kg',
       isPt: true,
       isSelf: false,
       spec: ['Calisthenics', 'Giảm cân nhanh', 'Sức bền'],
@@ -100,10 +112,12 @@ export default function App() {
       name: 'Nguyễn Minh Khang',
       role: 'Huấn luyện viên',
       avatar: 'https://images.unsplash.com/photo-1567013127542-490d757e51fc?w=150&auto=format&fit=crop&q=60',
-      bio: 'Huấn luyện viên Gym & Dinh dưỡng thể hình chuyên sâu.',
+      bio: 'Hỗ trợ học viên tăng cơ chuyên sâu, tối ưu hóa dinh dưỡng & tập Powerlifting bài bản.',
       phone: '0933268918',
       birthday: '17/12/2001',
       gender: 'Nam',
+      height: '182 cm',
+      weight: '85 kg',
       isPt: true,
       isSelf: false,
       spec: ['Tăng cơ', 'Dinh dưỡng chuyên sâu', 'Powerlifting'],
@@ -271,7 +285,7 @@ export default function App() {
   // Profile opening handler
   const handleOpenProfile = (profileSummary) => {
     const name = profileSummary.name;
-    if (name.includes('Bạn') || name.toLowerCase() === 'hùng') {
+    if (name.includes('Bạn') || name.toLowerCase() === 'hùng' || profileSummary.isSelf || name === myProfile.name) {
       setSelectedProfile(myProfile);
     } else if (mockProfiles[name]) {
       setSelectedProfile(mockProfiles[name]);
@@ -297,6 +311,12 @@ export default function App() {
     setSelectedProfile(updated);
   };
 
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    setSelectedProfile(null);
+    showToast('Đã đăng xuất tài khoản! 👋', 'orange');
+  };
+
   // Workout Completion callback - updates calo and rewards streak
   const handleWorkoutComplete = (summary) => {
     setCaloriesBurned(summary.calories);
@@ -320,6 +340,7 @@ export default function App() {
           showToast={showToast}
           appointments={appointments}
           setAppointments={setAppointments}
+          myProfile={myProfile}
         />
       );
     }
@@ -338,6 +359,8 @@ export default function App() {
             justCompletedWorkout={justCompletedWorkout}
             setJustCompletedWorkout={setJustCompletedWorkout}
             showToast={showToast}
+            myProfile={myProfile}
+            onLogout={handleLogout}
           />
         );
       case 'nutrition':
@@ -383,6 +406,7 @@ export default function App() {
             setAppointments={setAppointments}
             onClose={() => handleTabSwitch('dashboard')}
             setScreen={handleTabSwitch}
+            myProfile={myProfile}
           />
         );
       case 'marketplace':
@@ -392,6 +416,7 @@ export default function App() {
             showToast={showToast}
             appointments={appointments}
             setAppointments={setAppointments}
+            myProfile={myProfile}
           />
         );
       default:
@@ -407,6 +432,8 @@ export default function App() {
             justCompletedWorkout={justCompletedWorkout}
             setJustCompletedWorkout={setJustCompletedWorkout}
             showToast={showToast}
+            myProfile={myProfile}
+            onLogout={handleLogout}
           />
         );
     }
@@ -476,65 +503,95 @@ export default function App() {
 
       {/* Main App Screens Container */}
       <div className="app-container">
-        {renderActiveScreen()}
+        {!isAuthenticated ? (
+          <Auth 
+            onLoginSuccess={(userData) => {
+              setMyProfile({
+                ...myProfile,
+                ...userData,
+                name: userData.name + ' (Bạn)',
+                isSelf: true
+              });
+              setIsAuthenticated(true);
+              setScreen('dashboard');
+            }}
+            onRegisterSuccess={(userData) => {
+              setMyProfile({
+                ...userData,
+                bio: userData.goal,
+                name: userData.name + ' (Bạn)',
+                role: 'Hội viên',
+                avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=60',
+                isPt: false,
+                isSelf: true
+              });
+              setIsAuthenticated(true);
+              setScreen('dashboard');
+            }}
+          />
+        ) : (
+          <>
+            {renderActiveScreen()}
 
-        {/* Navigation Bar - 5 items */}
-        <div className="bottom-nav" style={{ height: '76px', paddingBottom: '10px' }}>
-          <button 
-            className={`nav-item ${screen === 'dashboard' && !selectedProfile ? 'active' : ''}`}
-            onClick={() => handleTabSwitch('dashboard')}
-            style={{ width: '50px' }}
-          >
-            <div className="nav-icon-wrapper" style={{ padding: '4px' }}>
-              <Home size={18} />
-            </div>
-            <span style={{ fontSize: '9px' }}>Trang chủ</span>
-          </button>
+            {/* Navigation Bar - 5 items */}
+            <div className="bottom-nav" style={{ height: '76px', paddingBottom: '10px' }}>
+              <button 
+                className={`nav-item ${screen === 'dashboard' && !selectedProfile ? 'active' : ''}`}
+                onClick={() => handleTabSwitch('dashboard')}
+                style={{ width: '50px' }}
+              >
+                <div className="nav-icon-wrapper" style={{ padding: '4px' }}>
+                  <Home size={18} />
+                </div>
+                <span style={{ fontSize: '9px' }}>Trang chủ</span>
+              </button>
 
-          <button 
-            className={`nav-item ${screen === 'nutrition' && !selectedProfile ? 'active' : ''}`}
-            onClick={() => handleTabSwitch('nutrition')}
-            style={{ width: '50px' }}
-          >
-            <div className="nav-icon-wrapper" style={{ padding: '4px' }}>
-              <Camera size={18} />
-            </div>
-            <span style={{ fontSize: '9px' }}>Quét món</span>
-          </button>
+              <button 
+                className={`nav-item ${screen === 'nutrition' && !selectedProfile ? 'active' : ''}`}
+                onClick={() => handleTabSwitch('nutrition')}
+                style={{ width: '50px' }}
+              >
+                <div className="nav-icon-wrapper" style={{ padding: '4px' }}>
+                  <Camera size={18} />
+                </div>
+                <span style={{ fontSize: '9px' }}>Quét món</span>
+              </button>
 
-          <button 
-            className={`nav-item ${screen === 'workout' && !selectedProfile ? 'active' : ''}`}
-            onClick={() => handleTabSwitch('workout')}
-            style={{ width: '50px' }}
-          >
-            <div className="nav-icon-wrapper" style={{ padding: '4px' }}>
-              <Calendar size={18} />
-            </div>
-            <span style={{ fontSize: '9px' }}>Lịch tập</span>
-          </button>
+              <button 
+                className={`nav-item ${screen === 'workout' && !selectedProfile ? 'active' : ''}`}
+                onClick={() => handleTabSwitch('workout')}
+                style={{ width: '50px' }}
+              >
+                <div className="nav-icon-wrapper" style={{ padding: '4px' }}>
+                  <Calendar size={18} />
+                </div>
+                <span style={{ fontSize: '9px' }}>Lịch tập</span>
+              </button>
 
-          <button 
-            className={`nav-item ${screen === 'social' && !selectedProfile ? 'active' : ''}`}
-            onClick={() => handleTabSwitch('social')}
-            style={{ width: '50px' }}
-          >
-            <div className="nav-icon-wrapper" style={{ padding: '4px' }}>
-              <MessageSquare size={18} />
-            </div>
-            <span style={{ fontSize: '9px' }}>Cộng đồng</span>
-          </button>
+              <button 
+                className={`nav-item ${screen === 'social' && !selectedProfile ? 'active' : ''}`}
+                onClick={() => handleTabSwitch('social')}
+                style={{ width: '50px' }}
+              >
+                <div className="nav-icon-wrapper" style={{ padding: '4px' }}>
+                  <MessageSquare size={18} />
+                </div>
+                <span style={{ fontSize: '9px' }}>Cộng đồng</span>
+              </button>
 
-          <button 
-            className={`nav-item ${screen === 'marketplace' && !selectedProfile ? 'active' : ''}`}
-            onClick={() => handleTabSwitch('marketplace')}
-            style={{ width: '50px' }}
-          >
-            <div className="nav-icon-wrapper" style={{ padding: '4px' }}>
-              <Award size={18} />
+              <button 
+                className={`nav-item ${screen === 'marketplace' && !selectedProfile ? 'active' : ''}`}
+                onClick={() => handleTabSwitch('marketplace')}
+                style={{ width: '50px' }}
+              >
+                <div className="nav-icon-wrapper" style={{ padding: '4px' }}>
+                  <Award size={18} />
+                </div>
+                <span style={{ fontSize: '9px' }}>Chợ PT</span>
+              </button>
             </div>
-            <span style={{ fontSize: '9px' }}>Chợ PT</span>
-          </button>
-        </div>
+          </>
+        )}
       </div>
 
       {/* iOS Home Indicator Bar */}

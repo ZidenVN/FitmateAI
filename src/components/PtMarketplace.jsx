@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Star, Award, Sparkles, X, Calendar, Clock, Check } from 'lucide-react';
 
-export default function PtMarketplace({ onOpenProfile, showToast, appointments, setAppointments }) {
+export default function PtMarketplace({ onOpenProfile, showToast, appointments, setAppointments, myProfile }) {
   const pts = [
     {
       id: 1,
@@ -45,6 +45,8 @@ export default function PtMarketplace({ onOpenProfile, showToast, appointments, 
     const newAppt = {
       id: Date.now(),
       ptName: activeBookingPt.name,
+      userName: myProfile?.name?.replace('(Bạn)', '').trim() || 'Hùng',
+      userAvatar: myProfile?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=60',
       date: bookingDate,
       time: bookingTime,
       status: 'Đợi xác nhận'

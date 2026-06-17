@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Play, Square, Activity, Sparkles, Clock, CheckCircle, Circle, Trophy, ArrowRight, RefreshCw, X } from 'lucide-react';
+import { Play, Square, Activity, Sparkles, Clock, CheckCircle, Circle, Trophy, ArrowRight, RefreshCw, X, Trash2, GripVertical } from 'lucide-react';
 
 export default function WorkoutPlanner({ onCompleteTask, onWorkoutComplete, isWorkoutCompleted, setScreen }) {
   const [selectedDay, setSelectedDay] = useState('Th 4'); // Default Wednesday (Today)
@@ -14,6 +14,10 @@ export default function WorkoutPlanner({ onCompleteTask, onWorkoutComplete, isWo
   const [swapTarget, setSwapTarget] = useState(null); // { index, exercise }
   const [aiSuggestions, setAiSuggestions] = useState([]);
   const [toastMessage, setToastMessage] = useState('');
+  const [isAutoPlanning, setIsAutoPlanning] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [draggedIndex, setDraggedIndex] = useState(null);
+  const [adaptiveWorkouts, setAdaptiveWorkouts] = useState({});
 
   const days = [
     { name: 'Th 2', label: 'T2' },
@@ -77,49 +81,49 @@ export default function WorkoutPlanner({ onCompleteTask, onWorkoutComplete, isWo
 
   // Dynamic exercise pool representing various movements
   const exercisePool = [
-    { name: 'Incline Barbell Bench Press (Đẩy ngực dốc lên)', baseCalories: 85, sets: '4 sets x 10 reps', rest: '90s' },
-    { name: 'Chest Fly Machine (Ép ngực bằng máy)', baseCalories: 75, sets: '4 sets x 12 reps', rest: '60s' },
-    { name: 'Dips (Cơ ngực dưới & Tay sau)', baseCalories: 70, sets: '4 sets x Max reps', rest: '60s' },
-    { name: 'Overhead Dumbbell Extension (Tay sau qua đầu)', baseCalories: 45, sets: '3 sets x 12 reps', rest: '60s' },
-    { name: 'Tricep Dumbbell Kickbacks (Tập tay sau)', baseCalories: 45, sets: '3 sets x 12 reps', rest: '60s' },
-    { name: 'Skull Crushers (Nằm đẩy tạ sau đầu)', baseCalories: 55, sets: '3 sets x 10 reps', rest: '60s' },
-    { name: 'Incline Dumbbell Fly (Ngực dốc bay tạ)', baseCalories: 65, sets: '3 sets x 12 reps', rest: '60s' },
-    { name: 'Push-ups (Hít đất truyền thống)', baseCalories: 60, sets: '3 sets x 15 reps', rest: '60s' },
-    { name: 'Decline Dumbbell Press (Đẩy ngực dốc xuống)', baseCalories: 75, sets: '3 sets x 12 reps', rest: '60s' },
-    { name: 'Bodyweight Pull-ups (Hít xà đơn)', baseCalories: 85, sets: '4 sets x Max reps', rest: '90s' },
-    { name: 'Bent-over Barbell Row (Gập người chèo tạ)', baseCalories: 85, sets: '4 sets x 10 reps', rest: '60s' },
-    { name: 'Seated Cable Row (Kéo cáp ngồi)', baseCalories: 75, sets: '4 sets x 12 reps', rest: '60s' },
-    { name: 'Single-Arm Dumbbell Row (Kéo tạ một bên)', baseCalories: 65, sets: '3 sets x 12 reps', rest: '60s' },
-    { name: 'T-Bar Row (Chèo thanh T lưng xô)', baseCalories: 75, sets: '3 sets x 10 reps', rest: '60s' },
-    { name: 'Face Pulls (Kéo cáp cơ vai sau)', baseCalories: 60, sets: '3 sets x 15 reps', rest: '60s' },
-    { name: 'Dumbbell Goblet Squat (Gánh tạ tay)', baseCalories: 90, sets: '4 sets x 12 reps', rest: '90s' },
-    { name: 'Bulgarian Split Squat (Squat một chân)', baseCalories: 95, sets: '4 sets x 10 reps', rest: '60s' },
-    { name: 'Hack Squat Machine (Đạp tạ máy dốc)', baseCalories: 105, sets: '4 sets x 10 reps', rest: '90s' },
-    { name: 'Leg Extensions (Máy đá đùi trước)', baseCalories: 75, sets: '3 sets x 12 reps', rest: '60s' },
-    { name: 'Dumbbell Lunges (Bước chùng chân tạ)', baseCalories: 85, sets: '3 sets x 12 reps', rest: '60s' },
-    { name: 'Sumo Deadlift (Tạ đòn mông đùi)', baseCalories: 90, sets: '3 sets x 10 reps', rest: '90s' },
-    { name: 'Walking Lunges (Bước tiến chùng chân)', baseCalories: 75, sets: '3 sets x 12 reps', rest: '60s' },
-    { name: 'Step-ups (Bước bục gỗ tạ tay)', baseCalories: 65, sets: '3 sets x 12 reps', rest: '60s' },
-    { name: 'Glute Bridges (Nằm cầu mông bụng)', baseCalories: 60, sets: '3 sets x 15 reps', rest: '60s' },
-    { name: 'Box Jumps (Bật nhảy bục gỗ)', baseCalories: 65, sets: '3 sets x 10 reps', rest: '60s' },
-    { name: 'Kettlebell Swings (Vung tạ ấm)', baseCalories: 70, sets: '3 sets x 15 reps', rest: '60s' },
-    { name: 'Mountain Climbers (Leo núi nhanh)', baseCalories: 55, sets: '3 sets x 30 giây', rest: 'Cardio' },
-    { name: 'Ab Wheel Rollouts (Lăn bánh xe bụng)', baseCalories: 55, sets: '3 sets x 10 reps', rest: '60s' },
-    { name: 'Hanging Leg Raises (Đu xà nâng gối)', baseCalories: 45, sets: '3 sets x 12 reps', rest: '60s' },
-    { name: 'Side Plank (Plank nghiêng sườn)', baseCalories: 45, sets: '3 sets x 45 giây', rest: '60s' },
-    { name: 'Russian Twists (Xoay hông vặn bụng)', baseCalories: 45, sets: '3 sets x 20 reps', rest: '60s' },
-    { name: 'Lying Leg Raises (Nằm nâng hai chân)', baseCalories: 35, sets: '3 sets x 15 reps', rest: '60s' },
-    { name: 'Dead Bug (Tập cơ bụng sâu)', baseCalories: 35, sets: '3 sets x 12 reps', rest: 'Phục hồi' },
-    { name: 'Elliptical Trainer (Máy chạy toàn thân)', baseCalories: 110, sets: '15 phút', rest: 'Thả lỏng' },
-    { name: 'Rowing Machine (Máy chèo thuyền)', baseCalories: 115, sets: '15 phút', rest: 'Toàn thân' },
-    { name: 'Stationary Cycling (Đạp xe tại chỗ)', baseCalories: 125, sets: '15 phút', rest: 'Cardio' },
-    { name: 'Incline Walking (Đi bộ leo dốc máy)', baseCalories: 85, sets: '20 phút', rest: 'Nhẹ nhàng' },
-    { name: 'Elliptical Slow Pace (Chạy máy chậm)', baseCalories: 75, sets: '20 phút', rest: 'Phục hồi' },
-    { name: 'Leisure Cycling (Đạp xe nhẹ nhàng)', baseCalories: 75, sets: '20 phút', rest: 'Thư giãn' },
-    { name: 'Elliptical Cardio (Máy tập toàn thân)', baseCalories: 140, sets: '20 phút', rest: 'Thả lỏng' },
-    { name: 'Stair Climber (Máy leo cầu thang)', baseCalories: 160, sets: '12 phút', rest: 'Cơ đùi' },
-    { name: 'Kettlebell Halos (Cơ vai & bụng)', baseCalories: 50, sets: '3 sets x 12 reps', rest: '60s' },
-    { name: 'Dumbbell Bicep Curls (Cuốn bắp tay trước)', baseCalories: 45, sets: '3 sets x 12 reps', rest: '60s' }
+    { name: 'Incline Barbell Bench Press (Đẩy ngực dốc lên)', baseCalories: 85, sets: '4 sets x 10 reps', rest: '90s', tags: ['ngực', 'chest', 'nặng', 'heavy', 'ngực trên', 'sung sức'] },
+    { name: 'Chest Fly Machine (Ép ngực bằng máy)', baseCalories: 75, sets: '4 sets x 12 reps', rest: '60s', tags: ['ngực', 'chest', 'vừa', 'medium'] },
+    { name: 'Dips (Cơ ngực dưới & Tay sau)', baseCalories: 70, sets: '4 sets x Max reps', rest: '60s', tags: ['ngực', 'tay sau', 'chest', 'tricep', 'nặng', 'heavy', 'sung sức'] },
+    { name: 'Overhead Dumbbell Extension (Tay sau qua đầu)', baseCalories: 45, sets: '3 sets x 12 reps', rest: '60s', tags: ['tay sau', 'tricep', 'nhẹ', 'light', 'mệt mỏi'] },
+    { name: 'Tricep Dumbbell Kickbacks (Tập tay sau)', baseCalories: 45, sets: '3 sets x 12 reps', rest: '60s', tags: ['tay sau', 'tricep', 'nhẹ', 'light', 'mệt mỏi'] },
+    { name: 'Skull Crushers (Nằm đẩy tạ sau đầu)', baseCalories: 55, sets: '3 sets x 10 reps', rest: '60s', tags: ['tay sau', 'tricep', 'vừa', 'medium'] },
+    { name: 'Incline Dumbbell Fly (Ngực dốc bay tạ)', baseCalories: 65, sets: '3 sets x 12 reps', rest: '60s', tags: ['ngực', 'chest', 'nhẹ', 'light', 'mệt mỏi'] },
+    { name: 'Push-ups (Hít đất truyền thống)', baseCalories: 60, sets: '3 sets x 15 reps', rest: '60s', tags: ['ngực', 'chest', 'nhẹ', 'light', 'tay sau', 'vai', 'mệt mỏi'] },
+    { name: 'Decline Dumbbell Press (Đẩy ngực dốc xuống)', baseCalories: 75, sets: '3 sets x 12 reps', rest: '60s', tags: ['ngực', 'chest', 'vừa', 'medium'] },
+    { name: 'Bodyweight Pull-ups (Hít xà đơn)', baseCalories: 85, sets: '4 sets x Max reps', rest: '90s', tags: ['lưng', 'xô', 'back', 'nặng', 'heavy', 'sung sức'] },
+    { name: 'Bent-over Barbell Row (Gập người chèo tạ)', baseCalories: 85, sets: '4 sets x 10 reps', rest: '60s', tags: ['lưng', 'xô', 'back', 'nặng', 'heavy', 'sung sức'] },
+    { name: 'Seated Cable Row (Kéo cáp ngồi)', baseCalories: 75, sets: '4 sets x 12 reps', rest: '60s', tags: ['lưng', 'xô', 'back', 'vừa', 'medium'] },
+    { name: 'Single-Arm Dumbbell Row (Kéo tạ một bên)', baseCalories: 65, sets: '3 sets x 12 reps', rest: '60s', tags: ['lưng', 'xô', 'back', 'nhẹ', 'light', 'mệt mỏi'] },
+    { name: 'T-Bar Row (Chèo thanh T lưng xô)', baseCalories: 75, sets: '3 sets x 10 reps', rest: '60s', tags: ['lưng', 'xô', 'back', 'nặng', 'heavy', 'sung sức'] },
+    { name: 'Face Pulls (Kéo cáp cơ vai sau)', baseCalories: 60, sets: '3 sets x 15 reps', rest: '60s', tags: ['vai', 'shoulder', 'nhẹ', 'light', 'mệt mỏi'] },
+    { name: 'Dumbbell Goblet Squat (Gánh tạ tay)', baseCalories: 90, sets: '4 sets x 12 reps', rest: '90s', tags: ['chân', 'đùi', 'leg', 'nặng', 'heavy', 'sung sức'] },
+    { name: 'Bulgarian Split Squat (Squat một chân)', baseCalories: 95, sets: '4 sets x 10 reps', rest: '60s', tags: ['chân', 'đùi', 'leg', 'nặng', 'heavy', 'sung sức'] },
+    { name: 'Hack Squat Machine (Đạp tạ máy dốc)', baseCalories: 105, sets: '4 sets x 10 reps', rest: '90s', tags: ['chân', 'đùi', 'leg', 'nặng', 'heavy', 'sung sức'] },
+    { name: 'Leg Extensions (Máy đá đùi trước)', baseCalories: 75, sets: '3 sets x 12 reps', rest: '60s', tags: ['chân', 'đùi', 'leg', 'nhẹ', 'light', 'mệt mỏi'] },
+    { name: 'Dumbbell Lunges (Bước chùng chân tạ)', baseCalories: 85, sets: '3 sets x 12 reps', rest: '60s', tags: ['chân', 'đùi', 'leg', 'vừa', 'medium'] },
+    { name: 'Sumo Deadlift (Tạ đòn mông đùi)', baseCalories: 90, sets: '3 sets x 10 reps', rest: '90s', tags: ['chân', 'đùi', 'mông', 'leg', 'nặng', 'heavy', 'sung sức'] },
+    { name: 'Walking Lunges (Bước tiến chùng chân)', baseCalories: 75, sets: '3 sets x 12 reps', rest: '60s', tags: ['chân', 'đùi', 'leg', 'vừa', 'medium'] },
+    { name: 'Step-ups (Bước bục gỗ tạ tay)', baseCalories: 65, sets: '3 sets x 12 reps', rest: '60s', tags: ['chân', 'đùi', 'leg', 'nhẹ', 'light', 'mệt mỏi'] },
+    { name: 'Glute Bridges (Nằm cầu mông bụng)', baseCalories: 60, sets: '3 sets x 15 reps', rest: '60s', tags: ['mông', 'bụng', 'abs', 'glute', 'nhẹ', 'light', 'mệt mỏi'] },
+    { name: 'Box Jumps (Bật nhảy bục gỗ)', baseCalories: 65, sets: '3 sets x 10 reps', rest: '60s', tags: ['chân', 'leg', 'cardio', 'vừa', 'medium'] },
+    { name: 'Kettlebell Swings (Vung tạ ấm)', baseCalories: 70, sets: '3 sets x 15 reps', rest: '60s', tags: ['lưng', 'chân', 'cardio', 'vừa', 'medium'] },
+    { name: 'Mountain Climbers (Leo núi nhanh)', baseCalories: 55, sets: '3 sets x 30 giây', rest: 'Cardio', tags: ['bụng', 'abs', 'cardio', 'nhẹ', 'light', 'mệt mỏi'] },
+    { name: 'Ab Wheel Rollouts (Lăn bánh xe bụng)', baseCalories: 55, sets: '3 sets x 10 reps', rest: '60s', tags: ['bụng', 'abs', 'vừa', 'medium'] },
+    { name: 'Hanging Leg Raises (Đu xà nâng gối)', baseCalories: 45, sets: '3 sets x 12 reps', rest: '60s', tags: ['bụng', 'abs', 'nhẹ', 'light', 'mệt mỏi'] },
+    { name: 'Side Plank (Plank nghiêng sườn)', baseCalories: 45, sets: '3 sets x 45 giây', rest: '60s', tags: ['bụng', 'abs', 'nhẹ', 'light', 'mệt mỏi'] },
+    { name: 'Russian Twists (Xoay hông vặn bụng)', baseCalories: 45, sets: '3 sets x 20 reps', rest: '60s', tags: ['bụng', 'abs', 'nhẹ', 'light', 'mệt mỏi'] },
+    { name: 'Lying Leg Raises (Nằm nâng hai chân)', baseCalories: 35, sets: '3 sets x 15 reps', rest: '60s', tags: ['bụng', 'abs', 'nhẹ', 'light', 'mệt mỏi'] },
+    { name: 'Dead Bug (Tập cơ bụng sâu)', baseCalories: 35, sets: '3 sets x 12 reps', rest: 'Phục hồi', tags: ['bụng', 'abs', 'nhẹ', 'light', 'mệt mỏi'] },
+    { name: 'Elliptical Trainer (Máy chạy toàn thân)', baseCalories: 110, sets: '15 phút', rest: 'Thả lỏng', tags: ['cardio', 'toàn thân', 'nhẹ', 'light', 'mệt mỏi'] },
+    { name: 'Rowing Machine (Máy chèo thuyền)', baseCalories: 115, sets: '15 phút', rest: 'Toàn thân', tags: ['cardio', 'toàn thân', 'nặng', 'heavy', 'sung sức'] },
+    { name: 'Stationary Cycling (Đạp xe tại chỗ)', baseCalories: 125, sets: '15 phút', rest: 'Cardio', tags: ['cardio', 'vừa', 'medium'] },
+    { name: 'Incline Walking (Đi bộ leo dốc máy)', baseCalories: 85, sets: '20 phút', rest: 'Nhẹ nhàng', tags: ['cardio', 'nhẹ', 'light', 'mệt mỏi'] },
+    { name: 'Elliptical Slow Pace (Chạy máy chậm)', baseCalories: 75, sets: '20 phút', rest: 'Phục hồi', tags: ['cardio', 'nhẹ', 'light', 'mệt mỏi'] },
+    { name: 'Leisure Cycling (Đạp xe nhẹ nhàng)', baseCalories: 75, sets: '20 phút', rest: 'Thư giãn', tags: ['cardio', 'nhẹ', 'light', 'mệt mỏi'] },
+    { name: 'Elliptical Cardio (Máy tập toàn thân)', baseCalories: 140, sets: '20 phút', rest: 'Thả lỏng', tags: ['cardio', 'nặng', 'heavy', 'sung sức'] },
+    { name: 'Stair Climber (Máy leo cầu thang)', baseCalories: 160, sets: '12 phút', rest: 'Cơ đùi', tags: ['cardio', 'chân', 'nặng', 'heavy', 'sung sức'] },
+    { name: 'Kettlebell Halos (Cơ vai & bụng)', baseCalories: 50, sets: '3 sets x 12 reps', rest: '60s', tags: ['vai', 'bụng', 'abs', 'shoulder', 'nhẹ', 'light', 'mệt mỏi'] },
+    { name: 'Dumbbell Bicep Curls (Cuốn bắp tay trước)', baseCalories: 45, sets: '3 sets x 12 reps', rest: '60s', tags: ['tay trước', 'tay', 'nhẹ', 'light', 'mệt mỏi'] }
   ];
 
   // Dynamically suggest AI alternatives based on target calories (+/- 5 to 10 kcal)
@@ -169,10 +173,24 @@ export default function WorkoutPlanner({ onCompleteTask, onWorkoutComplete, isWo
 
   // Get current day's exercises
   const getDailyExercises = () => {
-    if (selectedDay === 'Th 4' && fatigueMode) {
-      return wednesdayFatigueWorkouts;
+    if (fatigueMode) {
+      return adaptiveWorkouts[selectedDay] || workouts[selectedDay] || [];
     }
     return workouts[selectedDay] || [];
+  };
+
+  const updateCurrentWorkouts = (newWorkoutsList) => {
+    if (fatigueMode) {
+      setAdaptiveWorkouts(prev => ({
+        ...prev,
+        [selectedDay]: newWorkoutsList
+      }));
+    } else {
+      setWorkouts(prev => ({
+        ...prev,
+        [selectedDay]: newWorkoutsList
+      }));
+    }
   };
 
   const currentExercises = getDailyExercises();
@@ -259,14 +277,11 @@ export default function WorkoutPlanner({ onCompleteTask, onWorkoutComplete, isWo
     if (swapTarget === null) return;
     const { index } = swapTarget;
     
-    // Update workouts state
-    const dayWorkouts = [...workouts[selectedDay]];
+    // Update current day's workouts
+    const dayWorkouts = [...currentExercises];
     dayWorkouts[index] = newExercise;
     
-    setWorkouts({
-      ...workouts,
-      [selectedDay]: dayWorkouts
-    });
+    updateCurrentWorkouts(dayWorkouts);
 
     setSwapTarget(null);
     setAiSuggestions([]);
@@ -274,6 +289,193 @@ export default function WorkoutPlanner({ onCompleteTask, onWorkoutComplete, isWo
     // Inline Toast instead of browser alert
     setToastMessage("AI đã hoán đổi bài tập thành công! 🔄");
     setTimeout(() => setToastMessage(""), 2500);
+  };
+
+  const handleAutoPlan = () => {
+    setIsAutoPlanning(true);
+    
+    // Simulate AI thinking and calculation
+    setTimeout(() => {
+      // Pick 3-4 random, distinct exercises from the pool for the current day
+      const count = selectedDay === 'Th 5' || selectedDay === 'CN' ? 3 : 4;
+      const shuffled = [...exercisePool].sort(() => 0.5 - Math.random());
+      
+      const newExercises = shuffled.slice(0, count).map(ex => {
+        // Vary calories slightly from base calories (+/- 5 to 10 kcal)
+        const offset = (Math.floor(Math.random() * 6) + 5) * (Math.random() > 0.5 ? 1 : -1); 
+        return {
+          name: ex.name,
+          sets: ex.sets,
+          rest: ex.rest,
+          calories: Math.max(ex.baseCalories + offset, 15)
+        };
+      });
+
+      updateCurrentWorkouts(newExercises);
+
+      setIsAutoPlanning(false);
+
+      // Show toast
+      setToastMessage("AI đã tự động thiết lập lại lịch tập tối ưu cho hôm nay! ⚡");
+      setTimeout(() => setToastMessage(""), 3000);
+    }, 1200);
+  };
+
+  const handleDeleteExercise = (index) => {
+    const dayWorkouts = [...currentExercises];
+    if (dayWorkouts.length <= 2) {
+      setToastMessage("Mỗi ngày cần duy trì tối thiểu 2 bài tập để đảm bảo hiệu quả! ⚠️");
+      setTimeout(() => setToastMessage(""), 3000);
+      return;
+    }
+    
+    dayWorkouts.splice(index, 1);
+    updateCurrentWorkouts(dayWorkouts);
+    setToastMessage("Đã xóa bài tập khỏi danh sách! 🗑️");
+    setTimeout(() => setToastMessage(""), 2000);
+  };
+
+  const handleDrop = (targetIndex) => {
+    if (draggedIndex === null || draggedIndex === targetIndex) return;
+    const dayWorkouts = [...currentExercises];
+    const draggedItem = dayWorkouts[draggedIndex];
+    dayWorkouts.splice(draggedIndex, 1);
+    dayWorkouts.splice(targetIndex, 0, draggedItem);
+    updateCurrentWorkouts(dayWorkouts);
+    setDraggedIndex(null);
+    setToastMessage("Đã thay đổi thứ tự bài tập! ↕️");
+    setTimeout(() => setToastMessage(""), 2000);
+  };
+
+  const handleApplyAdaptivePrompt = () => {
+    if (!aiPrompt.trim()) {
+      setToastMessage("Vui lòng nhập thể trạng hoặc mục tiêu tập luyện! ✍️");
+      setTimeout(() => setToastMessage(""), 3000);
+      return;
+    }
+
+    setIsAutoPlanning(true);
+
+    setTimeout(() => {
+      // Split user input into lowercase word tokens
+      const lowerPrompt = aiPrompt.toLowerCase();
+      const tokens = lowerPrompt.split(/[\s,.-]+/).filter(t => t.length > 0);
+      
+      // Concept expansions / Synonyms mapping
+      if (lowerPrompt.includes("thân dưới") || lowerPrompt.includes("dưới")) {
+        tokens.push("chân", "đùi", "mông", "leg", "glute");
+      }
+      if (lowerPrompt.includes("thân trên") || lowerPrompt.includes("trên")) {
+        tokens.push("ngực", "lưng", "vai", "tay", "chest", "back", "shoulder", "arm");
+      }
+      
+      // Calculate match score for every exercise in our pool
+      const candidates = exercisePool.map(ex => {
+        let score = 0;
+        tokens.forEach(token => {
+          // Check if token matches exercise tags
+          if (ex.tags.some(tag => tag.toLowerCase().includes(token) || token.includes(tag.toLowerCase()))) {
+            score += 2;
+          }
+          // Check if token matches exercise name
+          if (ex.name.toLowerCase().includes(token)) {
+            score += 1;
+          }
+        });
+        return { ...ex, score };
+      });
+
+      // Filter to candidates with score > 0, sorted by score descending
+      const matched = candidates.filter(ex => ex.score > 0).sort((a, b) => b.score - a.score);
+
+      // Determine intensity based on keywords in the prompt
+      const isHeavy = tokens.some(t => ['nặng', 'heavy', 'sung', 'khoẻ', 'mạnh', 'tối đa', 'high', 'căng'].includes(t));
+      const isLight = tokens.some(t => ['nhẹ', 'mệt', 'mỏi', 'yếu', 'phục hồi', 'giãn', 'relax', 'low', 'thả lỏng'].includes(t));
+
+      let finalSelected = [];
+
+      if (matched.length === 0) {
+        // Fallback: if no keywords match, pick 5 random exercises from the pool
+        const shuffled = [...exercisePool].sort(() => 0.5 - Math.random());
+        finalSelected = shuffled.slice(0, 5).map(ex => {
+          let adjustedCalories = ex.baseCalories;
+          let adjustedSets = ex.sets;
+          if (isHeavy) {
+            adjustedCalories += 15;
+            if (ex.sets.includes('reps')) {
+              adjustedSets = ex.sets.replace(/(\d+)\s*reps/, (match, reps) => `${parseInt(reps) + 2} reps`);
+            }
+          } else if (isLight) {
+            adjustedCalories = Math.max(ex.baseCalories - 15, 15);
+            adjustedSets = ex.sets.replace('sets', 'sets (nhẹ)').replace(/(\d+)\s*reps/, (match, reps) => `${Math.max(parseInt(reps) - 2, 6)} reps`);
+          }
+          return {
+            name: ex.name,
+            sets: adjustedSets,
+            rest: ex.rest,
+            calories: adjustedCalories
+          };
+        });
+        setToastMessage("AI không tìm thấy bài tập khớp từ khóa. Đã thiết lập lịch tập ngẫu nhiên! ⚡");
+      } else {
+        // Target count is dynamic between 4 and 6 exercises based on matches
+        let targetCount = Math.max(4, Math.min(matched.length, 6));
+
+        // Take the top matched templates
+        let selectedTemplates = matched.slice(0, targetCount);
+
+        // If the matching templates are fewer than targetCount (e.g. matched 2 but target is 4), pad list
+        if (selectedTemplates.length < targetCount) {
+          const matchedNames = new Set(selectedTemplates.map(t => t.name.toLowerCase()));
+          const remainingPool = exercisePool.filter(ex => !matchedNames.has(ex.name.toLowerCase()));
+          
+          // Pad with related exercises sharing tags
+          const matchedTags = new Set(selectedTemplates.flatMap(t => t.tags));
+          const relatedExercises = remainingPool.filter(ex => ex.tags.some(tag => matchedTags.has(tag)));
+          
+          const paddingCandidates = relatedExercises.length > 0 ? relatedExercises : remainingPool;
+          const shuffledPadding = [...paddingCandidates].sort(() => 0.5 - Math.random());
+          
+          while (selectedTemplates.length < targetCount && shuffledPadding.length > 0) {
+            const padItem = shuffledPadding.pop();
+            selectedTemplates.push(padItem);
+          }
+        }
+
+        // Apply intensity adjustments to final selected list
+        finalSelected = selectedTemplates.map(ex => {
+          let adjustedCalories = ex.baseCalories;
+          let adjustedSets = ex.sets;
+
+          if (isHeavy) {
+            adjustedCalories += 15;
+            if (ex.sets.includes('reps')) {
+              adjustedSets = ex.sets.replace(/(\d+)\s*reps/, (match, reps) => `${parseInt(reps) + 2} reps`);
+            }
+          } else if (isLight) {
+            adjustedCalories = Math.max(ex.baseCalories - 15, 15);
+            adjustedSets = ex.sets.replace('sets', 'sets (nhẹ)').replace(/(\d+)\s*reps/, (match, reps) => `${Math.max(parseInt(reps) - 2, 6)} reps`);
+          }
+
+          return {
+            name: ex.name,
+            sets: adjustedSets,
+            rest: ex.rest,
+            calories: adjustedCalories
+          };
+        });
+
+        setToastMessage(`AI Adaptive: Đã lên lịch ${finalSelected.length} bài tập phù hợp! 🎯`);
+      }
+
+      setAdaptiveWorkouts(prev => ({
+        ...prev,
+        [selectedDay]: finalSelected
+      }));
+
+      setIsAutoPlanning(false);
+      setTimeout(() => setToastMessage(""), 3500);
+    }, 1200);
   };
 
   // Validation conditions
@@ -495,7 +697,10 @@ export default function WorkoutPlanner({ onCompleteTask, onWorkoutComplete, isWo
         {days.map((day) => (
           <button
             key={day.name}
-            onClick={() => setSelectedDay(day.name)}
+            onClick={() => {
+              setSelectedDay(day.name);
+              setAiPrompt('');
+            }}
             style={{
               flex: 1,
               padding: '12px 6px',
@@ -543,9 +748,14 @@ export default function WorkoutPlanner({ onCompleteTask, onWorkoutComplete, isWo
           <label className="switch" style={{ position: 'relative', display: 'inline-block', width: '40px', height: '20px' }}>
             <input 
               type="checkbox" 
-              disabled={selectedDay !== 'Th 4'}
               checked={fatigueMode} 
-              onChange={() => setFatigueMode(!fatigueMode)}
+              onChange={() => {
+                const next = !fatigueMode;
+                setFatigueMode(next);
+                if (!next) {
+                  setAiPrompt('');
+                }
+              }}
               style={{ opacity: 0, width: 0, height: 0 }}
             />
             <span style={{
@@ -554,8 +764,7 @@ export default function WorkoutPlanner({ onCompleteTask, onWorkoutComplete, isWo
               inset: 0,
               backgroundColor: fatigueMode ? 'var(--accent-green)' : '#2d3748',
               borderRadius: '20px',
-              transition: '0.4s',
-              opacity: selectedDay !== 'Th 4' ? 0.3 : 1
+              transition: '0.4s'
             }}>
               <span style={{
                 position: 'absolute',
@@ -576,15 +785,96 @@ export default function WorkoutPlanner({ onCompleteTask, onWorkoutComplete, isWo
           <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', fontSize: '11px', color: 'var(--accent-green)' }}>
             <Sparkles size={14} style={{ marginTop: '2px', flexShrink: 0 }} />
             <span>
-              AI tự động giảm 30% mức tạ và tăng thời gian phục hồi để tránh quá tải cơ bắp.
+              AI Adaptive đang kích hoạt. Hãy nhập thể trạng hoặc vùng cơ muốn tập ở dưới để AI phân tích và tự động lên lịch tập!
             </span>
           </div>
         ) : (
           <p className="subtitle" style={{ fontSize: '11px' }}>
-            AI sẽ tự điều chỉnh bài tập nếu hôm nay bạn cảm thấy mệt mỏi hoặc thiếu ngủ.
+            AI sẽ tự điều chỉnh bài tập dựa theo thể trạng, nhóm cơ và phương pháp tập mong muốn của bạn.
           </p>
         )}
+
+        {fatigueMode && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px solid var(--border-color)', paddingTop: '10px', marginTop: '4px' }}>
+            <label style={{ fontSize: '11.5px', color: 'var(--text-secondary)', fontWeight: 600 }}>
+              Nhập thể trạng, mục tiêu (Ví dụ: mệt mỏi tập bụng nhẹ, vai lưng nặng sung sức...):
+            </label>
+            <div style={{ display: 'flex', gap: '6px' }}>
+              <input 
+                type="text"
+                value={aiPrompt}
+                onChange={(e) => setAiPrompt(e.target.value)}
+                placeholder="Ví dụ: mệt mỏi, tập bụng nhẹ nhàng..."
+                style={{
+                  flex: 1,
+                  background: 'rgba(255, 255, 255, 0.03)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '10px',
+                  padding: '8px 10px',
+                  color: 'white',
+                  fontSize: '12.5px',
+                  outline: 'none',
+                  fontFamily: 'inherit'
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleApplyAdaptivePrompt();
+                }}
+              />
+              <button
+                onClick={handleApplyAdaptivePrompt}
+                disabled={isAutoPlanning}
+                style={{
+                  background: 'var(--accent-green)',
+                  border: 'none',
+                  color: 'var(--bg-dark)',
+                  borderRadius: '10px',
+                  padding: '8px 14px',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  transition: 'opacity 0.2s',
+                  opacity: isAutoPlanning ? 0.7 : 1
+                }}
+              >
+                {isAutoPlanning ? 'Đang lọc...' : 'Lọc AI'}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Auto Plan Button */}
+      {!timerRunning && !isWorkoutCompleted && (
+        <button
+          onClick={handleAutoPlan}
+          disabled={isAutoPlanning}
+          style={{
+            width: '100%',
+            padding: '12px',
+            borderRadius: '14px',
+            border: '1.5px dashed var(--accent-orange)',
+            background: 'rgba(255, 87, 34, 0.08)',
+            color: 'var(--accent-orange)',
+            fontWeight: 700,
+            fontSize: '13px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            boxShadow: '0 4px 15px rgba(255, 87, 34, 0.1)',
+            transition: 'all 0.2s ease',
+            opacity: isAutoPlanning ? 0.7 : 1,
+            pointerEvents: isAutoPlanning ? 'none' : 'auto'
+          }}
+        >
+          <Sparkles size={16} className={isAutoPlanning ? 'animate-spin' : ''} />
+          {isAutoPlanning ? 'AI đang thiết kế lịch tập tối ưu...' : 'Tự động thiết lịch bằng AI'}
+        </button>
+      )}
 
       {/* Exercise List */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -641,14 +931,38 @@ export default function WorkoutPlanner({ onCompleteTask, onWorkoutComplete, isWo
               <div 
                 key={index}
                 className="glass-card" 
+                draggable={!timerRunning && !isWorkoutCompleted}
+                onDragStart={(e) => {
+                  if (timerRunning || isWorkoutCompleted) return;
+                  setDraggedIndex(index);
+                  e.dataTransfer.effectAllowed = "move";
+                }}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                }}
+                onDrop={(e) => {
+                  if (timerRunning || isWorkoutCompleted) return;
+                  handleDrop(index);
+                }}
                 style={{ 
                   display: 'flex', 
-                  justifyContent: 'space-between', 
                   alignItems: 'center',
                   padding: '12px 14px',
-                  background: 'rgba(255, 255, 255, 0.01)'
+                  background: draggedIndex === index ? 'rgba(255,255,255,0.05)' : 'rgba(255, 255, 255, 0.01)',
+                  opacity: draggedIndex === index ? 0.5 : 1,
+                  cursor: !timerRunning && !isWorkoutCompleted ? 'grab' : 'default',
+                  transition: 'opacity 0.2s, background 0.2s',
+                  border: draggedIndex === index ? '1px dashed var(--accent-orange)' : '1px solid var(--border-color)',
+                  gap: '10px'
                 }}
               >
+                {/* Drag Handle Icon on the left */}
+                {!timerRunning && !isWorkoutCompleted && (
+                  <div style={{ color: 'var(--text-secondary)', cursor: 'grab', paddingRight: '4px', display: 'flex', alignItems: 'center' }}>
+                    <GripVertical size={14} />
+                  </div>
+                )}
+
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: '13px', fontWeight: 700 }}>{ex.name}</div>
                   <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px', display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -658,28 +972,56 @@ export default function WorkoutPlanner({ onCompleteTask, onWorkoutComplete, isWo
                   </div>
                 </div>
                 
-                {/* Swap / Suggest Button */}
+                {/* Action Buttons Group */}
                 {!isWorkoutCompleted && (
-                  <button 
-                    onClick={() => handleRequestSwap(index, ex)}
-                    style={{
-                      background: 'rgba(57, 255, 20, 0.05)',
-                      border: '1px solid rgba(57, 255, 20, 0.15)',
-                      color: 'var(--accent-green)',
-                      fontSize: '10px',
-                      fontWeight: 700,
-                      padding: '4px 10px',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                      transition: 'all 0.2s ease'
-                    }}
-                  >
-                    <RefreshCw size={10} />
-                    Đổi bài
-                  </button>
+                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRequestSwap(index, ex);
+                      }}
+                      style={{
+                        background: 'rgba(57, 255, 20, 0.05)',
+                        border: '1px solid rgba(57, 255, 20, 0.15)',
+                        color: 'var(--accent-green)',
+                        fontSize: '10px',
+                        fontWeight: 700,
+                        padding: '4px 8px',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '3px',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      <RefreshCw size={10} />
+                      Đổi bài
+                    </button>
+                    
+                    {/* Delete button */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteExercise(index);
+                      }}
+                      style={{
+                        background: 'rgba(255, 87, 34, 0.05)',
+                        border: '1px solid rgba(255, 87, 34, 0.15)',
+                        color: 'var(--accent-orange)',
+                        padding: '5px',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'all 0.2s ease'
+                      }}
+                      title="Xóa bài tập này"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
                 )}
               </div>
             ))

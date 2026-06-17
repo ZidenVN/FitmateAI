@@ -11,7 +11,9 @@ export default function Dashboard({
   onOpenProfile,
   justCompletedWorkout = false,
   setJustCompletedWorkout,
-  showToast
+  showToast,
+  myProfile,
+  onLogout
 }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [isFizzing, setIsFizzing] = useState(false);
@@ -61,19 +63,15 @@ export default function Dashboard({
 
   const handleOpenOwnProfile = () => {
     setDrawerOpen(false);
-    onOpenProfile({
-      name: 'Hùng (Bạn)',
-      role: 'Hội viên',
-      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=60',
-      isPt: false,
-      isSelf: true
-    });
+    onOpenProfile(myProfile);
   };
 
   const handleLogout = () => {
     setDrawerOpen(false);
-    if (showToast) {
-      showToast('Tính năng Đăng xuất sẽ khả dụng ở phiên bản chính thức!', 'orange');
+    if (onLogout) {
+      onLogout();
+    } else if (showToast) {
+      showToast('Đăng xuất thành công!', 'success');
     }
   };
 
@@ -125,13 +123,13 @@ export default function Dashboard({
             {/* User Info Brief */}
             <div style={{ display: 'flex', gap: '10px', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
               <img 
-                src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=60" 
-                alt="Hùng Avatar" 
+                src={myProfile?.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=60"} 
+                alt={`${myProfile?.name || 'User'} Avatar`} 
                 style={{ width: '44px', height: '44px', borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--accent-green)' }}
               />
               <div>
-                <div style={{ fontSize: '14px', fontWeight: 700 }}>Hùng (Bạn)</div>
-                <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Hội viên</div>
+                <div style={{ fontSize: '14px', fontWeight: 700 }}>{myProfile?.name || 'User'}</div>
+                <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{myProfile?.role || 'Hội viên'}</div>
               </div>
             </div>
 
@@ -254,7 +252,7 @@ export default function Dashboard({
           </button>
           <div>
             <h2 className="title-large" style={{ fontWeight: 800 }}>FitMate</h2>
-            <p className="subtitle">Chào mừng trở lại, Hùng 👋</p>
+            <p className="subtitle">Chào mừng trở lại, {myProfile?.name?.replace('(Bạn)', '').trim() || 'Hội viên'} 👋</p>
           </div>
         </div>
         <div className="glass-card" style={{ 
