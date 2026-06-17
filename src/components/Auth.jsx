@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Sparkles, Mail, Lock, User, Calendar, Ruler, Scale, Target, ArrowRight } from 'lucide-react';
 
-export default function Auth({ onLoginSuccess, onRegisterSuccess }) {
+export default function Auth({ onLoginSuccess, onRegisterSuccess, usersDb }) {
   const [isLoginMode, setIsLoginMode] = useState(true);
   const [error, setError] = useState('');
 
@@ -32,50 +32,20 @@ export default function Auth({ onLoginSuccess, onRegisterSuccess }) {
       return;
     }
 
-    // Check specific credentials for default accounts
-    if (email === 'pt@fitmate.vn' && password === '123456') {
-      onLoginSuccess({
-        name: 'Mai Xuân Tú',
-        role: 'Huấn luyện viên',
-        bio: 'Giúp học viên đạt mục tiêu hình thể Calisthenics tối ưu, xây dựng lối sống lành mạnh.',
-        height: '174 cm',
-        weight: '68 kg',
-        gender: 'Nam',
-        phone: '0368947538',
-        birthday: '20/10/1998',
-        avatar: 'https://images.unsplash.com/photo-1548690312-e3b507d8c110?w=150&auto=format&fit=crop&q=60',
-        isPt: true,
-        spec: ['Calisthenics', 'Giảm cân nhanh', 'Sức bền'],
-        exp: '3 năm kinh nghiệm',
-        price: '300.000đ/buổi'
-      });
-    } else if (email === 'user@fitmate.vn' && password === '123456') {
-      onLoginSuccess({
-        name: 'Hùng',
-        role: 'Hội viên',
-        bio: 'Đạt body 6 múi, cải thiện sức bền bỉ và thâm hụt mỡ bụng! 🏋️‍♂️🔥',
-        height: '175 cm',
-        weight: '70 kg',
-        gender: 'Nam',
-        phone: '0912345678',
-        birthday: '15/05/2004',
-        avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=60',
-        isPt: false
-      });
+    const db = usersDb || {};
+    const user = db[email];
+
+    if (user) {
+      if (user.password === password) {
+        onLoginSuccess({
+          email: user.email,
+          ...user.profile
+        });
+      } else {
+        setError('Mật khẩu không chính xác! ⚠️');
+      }
     } else {
-      // Simulate login success - passing custom user details
-      onLoginSuccess({
-        name: email.split('@')[0],
-        role: 'Hội viên',
-        bio: 'Sẵn sàng chinh phục mọi giới hạn cùng FitMate! 🏋️‍♂️🔥',
-        height: '175 cm',
-        weight: '70 kg',
-        gender: 'Nam',
-        phone: '0912345678',
-        birthday: '15/05/2004',
-        avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=60',
-        isPt: false
-      });
+      setError('Tài khoản không tồn tại! Vui lòng chuyển sang tab Đăng ký để tạo tài khoản mới. ⚠️');
     }
   };
 
@@ -85,6 +55,12 @@ export default function Auth({ onLoginSuccess, onRegisterSuccess }) {
 
     if (!name || !email || !password || !confirmPassword || !height || !weight || !goal || !birthday) {
       setError('Vui lòng điền đầy đủ tất cả các trường! ⚠️');
+      return;
+    }
+
+    const db = usersDb || {};
+    if (db[email]) {
+      setError('Email này đã được đăng ký! Vui lòng dùng email khác. ⚠️');
       return;
     }
 
@@ -102,6 +78,7 @@ export default function Auth({ onLoginSuccess, onRegisterSuccess }) {
     onRegisterSuccess({
       name,
       email,
+      password,
       phone: '09' + Math.floor(10000000 + Math.random() * 90000000),
       birthday,
       gender,
@@ -289,18 +266,13 @@ export default function Auth({ onLoginSuccess, onRegisterSuccess }) {
                 onClick={() => {
                   setEmail('user@fitmate.vn');
                   setPassword('123456');
-                  onLoginSuccess({
-                    name: 'Hùng',
-                    role: 'Hội viên',
-                    bio: 'Đạt body 6 múi, cải thiện sức bền bỉ và thâm hụt mỡ bụng! 🏋️‍♂️🔥',
-                    height: '175 cm',
-                    weight: '70 kg',
-                    gender: 'Nam',
-                    phone: '0912345678',
-                    birthday: '15/05/2004',
-                    avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=60',
-                    isPt: false
-                  });
+                  const user = usersDb?.['user@fitmate.vn'];
+                  if (user) {
+                    onLoginSuccess({
+                      email: user.email,
+                      ...user.profile
+                    });
+                  }
                 }}
                 style={{
                   padding: '8px 4px',
@@ -327,21 +299,13 @@ export default function Auth({ onLoginSuccess, onRegisterSuccess }) {
                 onClick={() => {
                   setEmail('pt@fitmate.vn');
                   setPassword('123456');
-                  onLoginSuccess({
-                    name: 'Mai Xuân Tú',
-                    role: 'Huấn luyện viên',
-                    bio: 'Giúp học viên đạt mục tiêu hình thể Calisthenics tối ưu, xây dựng lối sống lành mạnh.',
-                    height: '174 cm',
-                    weight: '68 kg',
-                    gender: 'Nam',
-                    phone: '0368947538',
-                    birthday: '20/10/1998',
-                    avatar: 'https://images.unsplash.com/photo-1548690312-e3b507d8c110?w=150&auto=format&fit=crop&q=60',
-                    isPt: true,
-                    spec: ['Calisthenics', 'Giảm cân nhanh', 'Sức bền'],
-                    exp: '3 năm kinh nghiệm',
-                    price: '300.000đ/buổi'
-                  });
+                  const pt = usersDb?.['pt@fitmate.vn'];
+                  if (pt) {
+                    onLoginSuccess({
+                      email: pt.email,
+                      ...pt.profile
+                    });
+                  }
                 }}
                 style={{
                   padding: '8px 4px',

@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, Send, Search } from 'lucide-react';
+import { ArrowLeft, Send, Search, MessageSquare } from 'lucide-react';
 
-export default function Messenger({ onClose, setScreen }) {
+export default function Messenger({ onClose, setScreen, myProfile, currentUserEmail }) {
   const [activeFriend, setActiveFriend] = useState(null);
   const [inputText, setInputText] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const messagesEndRef = useRef(null);
+  const isInitialUser = currentUserEmail === 'user@fitmate.vn' || myProfile?.email === 'user@fitmate.vn' || myProfile?.name?.includes('Hùng');
 
   // Conversations history stored in local state
   const [conversations, setConversations] = useState({
@@ -257,7 +258,36 @@ export default function Messenger({ onClose, setScreen }) {
         </div>
       ) : (
         /* ==================== CONVERSATIONS LIST VIEW ==================== */
-        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflowY: 'auto', padding: '16px 20px 80px', gap: '16px' }}>
+        !isInitialUser ? (
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            height: '480px', 
+            padding: '24px', 
+            textAlign: 'center', 
+            color: 'var(--text-secondary)' 
+          }}>
+            <div style={{ 
+              width: '64px', 
+              height: '64px', 
+              borderRadius: '50%', 
+              background: 'rgba(57, 255, 20, 0.05)', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              marginBottom: '16px' 
+            }}>
+              <MessageSquare size={32} color="var(--accent-green)" />
+            </div>
+            <h4 style={{ color: 'white', fontWeight: 700, fontSize: '15px' }}>Chưa có cuộc trò chuyện nào</h4>
+            <p style={{ fontSize: '12px', marginTop: '6px', lineHeight: '1.4', maxWidth: '240px' }}>
+              Hãy kết bạn tại tab **Cộng đồng** hoặc đặt lịch với PT tại **Chợ PT** để bắt đầu trò chuyện!
+            </p>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflowY: 'auto', padding: '16px 20px 80px', gap: '16px' }}>
           
           {/* Search Bar */}
           <div style={{ position: 'relative' }}>
@@ -389,9 +419,9 @@ export default function Messenger({ onClose, setScreen }) {
               )}
             </div>
           </div>
-
         </div>
-      )}
+      )
+    )}
 
     </div>
   );
