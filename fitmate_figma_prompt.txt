@@ -1,0 +1,43 @@
+================================================================================
+FITMATE UI/UX GENERATION PROMPT FOR FIGMA AI / GALILEO AI / UIZARD
+================================================================================
+
+Copy the prompt below to paste into Galileo AI, Figma AI, or Uizard to generate your FitMate frontend prototype.
+
+--------------------------------------------------------------------------------
+PROMPT START
+--------------------------------------------------------------------------------
+Design a modern, premium mobile app UI for "FitMate" - an all-in-one AI fitness ecosystem for Vietnam.
+App theme: Sleek dark mode (deep charcoal background #121212) with neon green (#39FF14) and active orange (#FF5722) accent colors, utilizing clean card layouts, glassmorphism, and premium modern typography (Inter/Outfit).
+
+The prototype should contain the following 4 key screens:
+
+1. Dashboard (Home Screen):
+- A header showing the user's profile with a friendly welcome message ("Xin chào, Hùng!") and a streak counter (e.g., "7 ngày liên tục 🔥").
+- A ring-style progress tracker showing today's calorie status (Calories Ingested vs. TDEE target: "1,800 / 2,400 kcal").
+- Quick access buttons for "AI Scan Food", "Today's Workout", and "Chat with AI Companion".
+- A "Daily Tasks" checklist with gamified badges.
+
+2. AI Nutrition Vision (Camera & Logging Screen):
+- A mock camera viewfinder overlay scanning a bowl of "Phở Bò" (Beef Pho).
+- AI recognition badge: "Phở Bò - 85% Match" displaying nutritional details: 550 kcal, 25g Protein, 65g Carbs, 15g Fat.
+- A prominent button to "Lưu vào nhật ký ăn uống" (Save to Log) and a slider to adjust portion size.
+
+3. AI Workout Planner (Workout Detail Screen):
+- A weekly calendar ribbon (Mon to Sun) showing an adaptive schedule.
+- Today's workout card labeled: "AI Adaptive Plan: Upper Body & Cardio (Adjusted for your fatigue level today)".
+- A list of exercises with thumbnails, sets, reps, and a floating "Bắt đầu tập" (Start Workout) button.
+
+4. AI Companion Chat & PT Marketplace (Hybrid Social Screen):
+- Split layout or tab system:
+  - Tab 1: AI Companion Chat: An interactive chat interface with "Buddy" (FitMate's AI mascot), showing friendly motivational nudges (e.g., "Bạn đã hoàn thành 80% mục tiêu hôm nay, cố lên nhé!").
+  - Tab 2: PT Marketplace: A clean list of verified local personal trainers (PTs) with professional headshots, ratings (e.g., "HLV Mai Xuân Tú - 4.9⭐ (3 năm kinh nghiệm)"), specialty tags (Calisthenics, Weight loss), and a primary "Đặt lịch hẹn" (Book Now) button.
+--------------------------------------------------------------------------------
+PROMPT END
+--------------------------------------------------------------------------------
+
+HƯỚNG DẪN SỬ DỤNG (HOW TO USE):
+1. Copy đoạn text từ "Design a modern..." đến hết phần mô tả màn hình số 4.
+2. Mở Figma AI (Tính năng "Make a design") hoặc các công cụ sinh UI bằng AI như Galileo AI (usegalileo.ai), Uizard.
+3. Paste đoạn prompt vào ô yêu cầu để sinh giao diện.
+4. Tinh chỉnh lại các chữ tiếng Việt hoặc kéo thả kết nối prototype trong Figma để có bản demo chạy thử mượt mà nhất.
