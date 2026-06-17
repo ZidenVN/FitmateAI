@@ -9,6 +9,7 @@ import UserProfile from './components/UserProfile';
 import Messenger from './components/Messenger';
 import Appointments from './components/Appointments';
 import Auth from './components/Auth';
+import ChuyenSau from './components/ChuyenSau';
 
 const DEFAULT_USERS = {
   'user@fitmate.vn': {
@@ -25,7 +26,11 @@ const DEFAULT_USERS = {
       height: '175 cm',
       weight: '70 kg',
       isPt: false,
-      isSelf: true
+      isSelf: true,
+      medicalCondition: 'Không có',
+      allergies: 'Không có',
+      trainingDays: ['Thứ 2', 'Thứ 4', 'Thứ 6'],
+      trainingTime: '18:00'
     },
     streak: 7,
     caloriesConsumed: 1250,
@@ -70,7 +75,11 @@ const DEFAULT_USERS = {
       isSelf: true,
       spec: ['Calisthenics', 'Giảm cân nhanh', 'Sức bền'],
       exp: '3 năm kinh nghiệm',
-      price: '300.000đ/buổi'
+      price: '300.000đ/buổi',
+      medicalCondition: 'Không có',
+      allergies: 'Không có',
+      trainingDays: ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'],
+      trainingTime: '08:00'
     },
     streak: 15,
     caloriesConsumed: 1800,
@@ -624,6 +633,15 @@ export default function App() {
             appointments={appointments}
             setAppointments={setAppointments}
             myProfile={myProfile}
+          />
+        );
+      case 'chuyen-sau':
+        return (
+          <ChuyenSau 
+            myProfile={myProfile}
+            onUpdateProfile={handleUpdateMyProfile}
+            onClose={() => handleTabSwitch('dashboard')}
+            showToast={showToast}
           />
         );
       default:

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Flame, Trophy, ArrowUpRight, TrendingUp, Zap, Menu, X, User, LogOut, Check, MessageCircle, Calendar } from 'lucide-react';
+import { Flame, Trophy, ArrowUpRight, TrendingUp, Zap, Menu, X, User, LogOut, Check, MessageCircle, Calendar, HeartPulse } from 'lucide-react';
 
 export default function Dashboard({ 
   streak, 
@@ -205,6 +205,30 @@ export default function Dashboard({
               </button>
 
               <button 
+                onClick={() => {
+                  setDrawerOpen(false);
+                  if (setScreen) setScreen('chuyen-sau');
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  background: 'none',
+                  border: 'none',
+                  color: 'white',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  padding: '8px 4px',
+                  width: '100%',
+                  textAlign: 'left'
+                }}
+              >
+                <HeartPulse size={16} color="var(--accent-green)" />
+                Chuyên sâu
+              </button>
+
+              <button 
                 onClick={handleLogout}
                 style={{
                   display: 'flex',
@@ -390,6 +414,28 @@ export default function Dashboard({
               </div>
               <span style={{ fontSize: '13px', fontWeight: 700 }}>Lịch Luyện Tập</span>
               <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>Kế hoạch AI thích ứng</span>
+            </div>
+
+            <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '8px', cursor: 'pointer' }} onClick={() => setScreen('marketplace')}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ padding: '6px', borderRadius: '10px', background: 'rgba(47, 128, 237, 0.1)', color: '#2f80ed' }}>
+                  <Calendar size={16} />
+                </div>
+                <ArrowUpRight size={14} color="var(--text-secondary)" />
+              </div>
+              <span style={{ fontSize: '13px', fontWeight: 700 }}>Đặt Lịch PT</span>
+              <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>Thuê PT huấn luyện</span>
+            </div>
+
+            <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '8px', cursor: 'pointer' }} onClick={() => setScreen('chuyen-sau')}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ padding: '6px', borderRadius: '10px', background: 'rgba(155, 81, 224, 0.1)', color: '#9b51e0' }}>
+                  <HeartPulse size={16} />
+                </div>
+                <ArrowUpRight size={14} color="var(--text-secondary)" />
+              </div>
+              <span style={{ fontSize: '13px', fontWeight: 700 }}>Chuyên Sâu</span>
+              <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>Y tế, dị ứng & lịch hoạt động</span>
             </div>
           </div>
         )}

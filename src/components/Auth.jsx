@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sparkles, Mail, Lock, User, Calendar, Ruler, Scale, Target, ArrowRight } from 'lucide-react';
+import { Sparkles, Mail, Lock, User, Calendar, Ruler, Scale, Target, ArrowRight, Activity, HeartPulse, Clock, ShieldAlert } from 'lucide-react';
 
 export default function Auth({ onLoginSuccess, onRegisterSuccess, usersDb }) {
   const [isLoginMode, setIsLoginMode] = useState(true);
@@ -17,6 +17,13 @@ export default function Auth({ onLoginSuccess, onRegisterSuccess, usersDb }) {
   const [gender, setGender] = useState('Nam');
   const [birthday, setBirthday] = useState('');
   const [goal, setGoal] = useState('');
+
+  // Onboarding states
+  const [onboardingStep, setOnboardingStep] = useState(1);
+  const [medicalCondition, setMedicalCondition] = useState('');
+  const [allergies, setAllergies] = useState('');
+  const [selectedDays, setSelectedDays] = useState(['Thứ 2', 'Thứ 4', 'Thứ 6']);
+  const [trainingTime, setTrainingTime] = useState('18:00');
 
   const handleLoginSubmit = (e) => {
     e.preventDefault();
@@ -74,17 +81,31 @@ export default function Auth({ onLoginSuccess, onRegisterSuccess, usersDb }) {
       return;
     }
 
-    // Pass the newly registered details back to the app state
+    // Advance to onboarding step 2
+    setOnboardingStep(2);
+  };
+
+  const handleOnboardingSubmit = (e) => {
+    e.preventDefault();
+
+    const formattedBirthday = birthday.includes('-') 
+      ? birthday.split('-').reverse().join('/') 
+      : birthday;
+
     onRegisterSuccess({
       name,
       email,
       password,
       phone: '09' + Math.floor(10000000 + Math.random() * 90000000),
-      birthday,
+      birthday: formattedBirthday,
       gender,
       height: height.includes('cm') ? height : `${height} cm`,
       weight: weight.includes('kg') ? weight : `${weight} kg`,
-      goal
+      goal,
+      medicalCondition: medicalCondition.trim() || 'Không có',
+      allergies: allergies.trim() || 'Không có',
+      trainingDays: selectedDays.length > 0 ? selectedDays : ['Thứ 2', 'Thứ 4', 'Thứ 6'],
+      trainingTime: trainingTime || '18:00'
     });
   };
 
@@ -122,6 +143,7 @@ export default function Auth({ onLoginSuccess, onRegisterSuccess, usersDb }) {
         <button
           onClick={() => {
             setIsLoginMode(true);
+            setOnboardingStep(1);
             setError('');
           }}
           style={{
@@ -142,6 +164,7 @@ export default function Auth({ onLoginSuccess, onRegisterSuccess, usersDb }) {
         <button
           onClick={() => {
             setIsLoginMode(false);
+            setOnboardingStep(1);
             setError('');
           }}
           style={{
@@ -329,7 +352,7 @@ export default function Auth({ onLoginSuccess, onRegisterSuccess, usersDb }) {
             </div>
           </div>
         </form>
-      ) : (
+      ) : onboardingStep === 1 ? (
         /* Register Form */
         <form onSubmit={handleRegisterSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -463,8 +486,7 @@ export default function Auth({ onLoginSuccess, onRegisterSuccess, usersDb }) {
               <div style={{ position: 'relative' }}>
                 <Calendar size={16} color="var(--text-secondary)" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
                 <input 
-                  type="text"
-                  placeholder="Ví dụ: 15/05/2004"
+                  type="date"
                   value={birthday}
                   onChange={(e) => setBirthday(e.target.value)}
                   style={{
@@ -476,7 +498,8 @@ export default function Auth({ onLoginSuccess, onRegisterSuccess, usersDb }) {
                     color: 'white',
                     fontSize: '13px',
                     outline: 'none',
-                    boxSizing: 'border-box'
+                    boxSizing: 'border-box',
+                    colorScheme: 'dark'
                   }}
                 />
               </div>
@@ -576,6 +599,163 @@ export default function Auth({ onLoginSuccess, onRegisterSuccess, usersDb }) {
           >
             Đăng ký tài khoản <ArrowRight size={16} />
           </button>
+        </form>
+      ) : (
+        /* Onboarding Form */
+        <form onSubmit={handleOnboardingSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ textAlign: 'center', marginBottom: '8px' }}>
+            <h4 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--accent-green)' }}>Khảo sát chuyên sâu 🩺</h4>
+            <p className="subtitle" style={{ fontSize: '10.5px', marginTop: '2px' }}>Thiết lập chế độ an toàn cho sức khỏe và lịch tập</p>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <label style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>Bệnh lý nền (nếu có):</label>
+            <div style={{ position: 'relative' }}>
+              <HeartPulse size={16} color="var(--text-secondary)" style={{ position: 'absolute', left: '12px', top: '12px' }} />
+              <textarea 
+                placeholder="Ví dụ: Tim mạch, huyết áp, xương khớp... (Hoặc để trống nếu khỏe mạnh)"
+                value={medicalCondition}
+                onChange={(e) => setMedicalCondition(e.target.value)}
+                style={{
+                  width: '100%',
+                  height: '65px',
+                  background: 'rgba(255, 255, 255, 0.03)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '10px',
+                  padding: '10px 12px 10px 38px',
+                  color: 'white',
+                  fontSize: '12.5px',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                  resize: 'none'
+                }}
+              />
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <label style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>Dị ứng thức ăn / kích thích (nếu có):</label>
+            <div style={{ position: 'relative' }}>
+              <ShieldAlert size={16} color="var(--text-secondary)" style={{ position: 'absolute', left: '12px', top: '12px' }} />
+              <textarea 
+                placeholder="Ví dụ: Dị ứng sữa tươi, hải sản, gluten... (Hoặc để trống)"
+                value={allergies}
+                onChange={(e) => setAllergies(e.target.value)}
+                style={{
+                  width: '100%',
+                  height: '65px',
+                  background: 'rgba(255, 255, 255, 0.03)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '10px',
+                  padding: '10px 12px 10px 38px',
+                  color: 'white',
+                  fontSize: '12.5px',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                  resize: 'none'
+                }}
+              />
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <label style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>Lịch tập mong muốn trong tuần:</label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '4px', margin: '4px 0' }}>
+              {['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ Nhật'].map((day) => {
+                const label = day === 'Chủ Nhật' ? 'CN' : day.replace('Thứ ', 'T');
+                const isSelected = selectedDays.includes(day);
+                return (
+                  <button
+                    key={day}
+                    type="button"
+                    onClick={() => {
+                      if (isSelected) {
+                        setSelectedDays(selectedDays.filter(d => d !== day));
+                      } else {
+                        setSelectedDays([...selectedDays, day]);
+                      }
+                    }}
+                    style={{
+                      flex: 1,
+                      height: '32px',
+                      borderRadius: '8px',
+                      border: isSelected ? '1px solid var(--accent-green)' : '1px solid var(--border-color)',
+                      background: isSelected ? 'rgba(57, 255, 20, 0.15)' : 'rgba(255, 255, 255, 0.02)',
+                      color: isSelected ? 'var(--accent-green)' : 'var(--text-secondary)',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <label style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>Giờ tập mong muốn hàng ngày:</label>
+            <div style={{ position: 'relative' }}>
+              <Clock size={16} color="var(--text-secondary)" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+              <input 
+                type="time"
+                value={trainingTime}
+                onChange={(e) => setTrainingTime(e.target.value)}
+                style={{
+                  width: '100%',
+                  background: 'rgba(255, 255, 255, 0.03)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '10px',
+                  padding: '10px 12px 10px 38px',
+                  color: 'white',
+                  fontSize: '13px',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                  colorScheme: 'dark'
+                }}
+              />
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+            <button 
+              type="button"
+              onClick={() => setOnboardingStep(1)}
+              style={{
+                flex: 1,
+                padding: '12px',
+                borderRadius: '10px',
+                border: '1px solid var(--border-color)',
+                background: 'rgba(255,255,255,0.05)',
+                color: 'white',
+                fontSize: '13px',
+                fontWeight: 700,
+                cursor: 'pointer'
+              }}
+            >
+              Quay lại
+            </button>
+            <button 
+              type="submit"
+              className="btn-primary"
+              style={{ 
+                flex: 2,
+                padding: '12px', 
+                fontSize: '13px', 
+                fontWeight: 700, 
+                display: 'flex', 
+                justifyContent: 'center', 
+                alignItems: 'center', 
+                gap: '6px',
+                background: 'var(--accent-green)',
+                color: 'var(--bg-dark)'
+              }}
+            >
+              Hoàn tất đăng ký 🚀
+            </button>
+          </div>
         </form>
       )}
     </div>
