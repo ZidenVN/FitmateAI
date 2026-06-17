@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Flame, Trophy, ArrowUpRight, TrendingUp, Zap, Menu, X, User, LogOut, Check, MessageCircle } from 'lucide-react';
+import { Flame, Trophy, ArrowUpRight, TrendingUp, Zap, Menu, X, User, LogOut, Check, MessageCircle, Calendar } from 'lucide-react';
 
 export default function Dashboard({ 
   streak, 
@@ -180,6 +180,30 @@ export default function Dashboard({
               >
                 <MessageCircle size={16} color="var(--accent-green)" />
                 Trò chuyện
+              </button>
+
+              <button 
+                onClick={() => {
+                  setDrawerOpen(false);
+                  if (setScreen) setScreen('appointments');
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  background: 'none',
+                  border: 'none',
+                  color: 'white',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  padding: '8px 4px',
+                  width: '100%',
+                  textAlign: 'left'
+                }}
+              >
+                <Calendar size={16} color="var(--accent-green)" />
+                Lịch hẹn
               </button>
 
               <button 

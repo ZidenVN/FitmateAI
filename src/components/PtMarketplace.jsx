@@ -1,7 +1,7 @@
-import React from 'react';
-import { Star, Award, Sparkles } from 'lucide-react';
+import React, { useState } from 'react';
+import { Star, Award, Sparkles, X, Calendar, Clock, Check } from 'lucide-react';
 
-export default function PtMarketplace({ onOpenProfile, showToast }) {
+export default function PtMarketplace({ onOpenProfile, showToast, appointments, setAppointments }) {
   const pts = [
     {
       id: 1,
@@ -23,14 +23,46 @@ export default function PtMarketplace({ onOpenProfile, showToast }) {
     }
   ];
 
-  const handleBookPt = (ptName) => {
+  const [activeBookingPt, setActiveBookingPt] = useState(null);
+  const [bookingDate, setBookingDate] = useState('');
+  const [bookingTime, setBookingTime] = useState('09:00');
+
+  const handleBookPt = (pt) => {
+    setActiveBookingPt(pt);
+    // Default to tomorrow's date
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    setBookingDate(tomorrow.toISOString().split('T')[0]);
+    setBookingTime('09:00');
+  };
+
+  const executeBooking = () => {
+    if (!bookingDate) {
+      if (showToast) showToast("Vui lòng chọn ngày hẹn tập!", "orange");
+      return;
+    }
+
+    const newAppt = {
+      id: Date.now(),
+      ptName: activeBookingPt.name,
+      date: bookingDate,
+      time: bookingTime,
+      status: 'Đợi xác nhận'
+    };
+
+    if (setAppointments && appointments) {
+      setAppointments([...appointments, newAppt]);
+    }
+
+    setActiveBookingPt(null);
+
     if (showToast) {
-      showToast(`Đăng ký thành công! HLV ${ptName} sẽ liên hệ bạn qua SĐT/Zalo.`, 'success');
+      showToast(`Đã gửi yêu cầu đặt lịch với HLV ${activeBookingPt.name}!`, 'success');
     }
   };
 
   return (
-    <div className="screen-content animate-slide-up">
+    <div className="screen-content animate-slide-up" style={{ position: 'relative' }}>
       {/* Title */}
       <div>
         <h2 className="title-large" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -107,7 +139,7 @@ export default function PtMarketplace({ onOpenProfile, showToast }) {
               ))}
             </div>
 
-            <button className="btn-primary" onClick={() => handleBookPt(pt.name)} style={{ padding: '10px' }}>
+            <button className="btn-primary" onClick={() => handleBookPt(pt)} style={{ padding: '10px' }}>
               Đặt lịch tập thử miễn phí
             </button>
           </div>
@@ -124,6 +156,105 @@ export default function PtMarketplace({ onOpenProfile, showToast }) {
           </p>
         </div>
       </div>
+
+      {/* Booking Selector Modal Overlay */}
+      {activeBookingPt && (
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'rgba(12, 15, 18, 0.95)',
+          zIndex: 1000,
+          borderRadius: '30px',
+          padding: '24px 20px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '16px'
+        }}>
+          {/* Header */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontWeight: 800, fontSize: '15px', color: 'var(--accent-green)' }}>Đặt lịch hẹn tập</span>
+            <button 
+              onClick={() => setActiveBookingPt(null)}
+              style={{ background: 'rgba(255,255,255,0.05)', border: 'none', color: 'white', borderRadius: '50%', width: '28px', height: '28px', cursor: 'pointer' }}
+            >
+              <X size={14} />
+            </button>
+          </div>
+
+          {/* PT Info Brief */}
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            <img 
+              src={activeBookingPt.avatar} 
+              alt={activeBookingPt.name} 
+              style={{ width: '40px', height: '40px', borderRadius: '10px', objectFit: 'cover' }}
+            />
+            <div>
+              <div style={{ fontSize: '13px', fontWeight: 700 }}>HLV {activeBookingPt.name}</div>
+              <p className="subtitle" style={{ fontSize: '9px' }}>{activeBookingPt.price} • Tập thử miễn phí</p>
+            </div>
+          </div>
+
+          {/* Date Picker Section */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <label style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>Chọn ngày hẹn tập:</label>
+            <input 
+              type="date"
+              value={bookingDate}
+              min={new Date().toISOString().split('T')[0]}
+              onChange={(e) => setBookingDate(e.target.value)}
+              style={{
+                width: '100%',
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '10px',
+                padding: '8px 10px',
+                color: 'white',
+                fontSize: '12.5px',
+                outline: 'none',
+                colorScheme: 'dark'
+              }}
+            />
+          </div>
+
+          {/* Time Picker Section */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <label style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>Chọn khung giờ:</label>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+              {['09:00', '10:30', '14:00', '16:30', '19:00', '20:30'].map((time) => (
+                <button
+                  key={time}
+                  type="button"
+                  onClick={() => setBookingTime(time)}
+                  style={{
+                    padding: '8px 4px',
+                    borderRadius: '8px',
+                    border: '1px solid',
+                    background: bookingTime === time ? 'rgba(57, 255, 20, 0.15)' : 'rgba(255,255,255,0.02)',
+                    borderColor: bookingTime === time ? 'var(--accent-green)' : 'var(--border-color)',
+                    color: bookingTime === time ? 'var(--accent-green)' : 'var(--text-primary)',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    textAlign: 'center',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  {time}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Confirm Button */}
+          <button 
+            className="btn-primary" 
+            onClick={executeBooking} 
+            style={{ width: '100%', marginTop: 'auto' }}
+          >
+            Xác nhận đặt lịch
+          </button>
+        </div>
+      )}
     </div>
   );
 }

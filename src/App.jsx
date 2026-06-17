@@ -7,6 +7,7 @@ import CompanionAndSocial from './components/CompanionAndSocial';
 import PtMarketplace from './components/PtMarketplace';
 import UserProfile from './components/UserProfile';
 import Messenger from './components/Messenger';
+import Appointments from './components/Appointments';
 
 export default function App() {
   const [screen, setScreen] = useState('dashboard');
@@ -135,6 +136,10 @@ export default function App() {
     }
   ]);
   const [activeChatId, setActiveChatId] = useState(1);
+  const [appointments, setAppointments] = useState([
+    { id: 1, ptName: 'Mai Xuân Tú', date: '2026-06-18', time: '09:00', status: 'Đã hẹn' },
+    { id: 2, ptName: 'Nguyễn Minh Khang', date: '2026-06-15', time: '14:30', status: 'Đã xong' }
+  ]);
 
   // Social Feed State
   const [posts, setPosts] = useState([
@@ -313,6 +318,8 @@ export default function App() {
           posts={posts}
           onUpdateProfile={handleUpdateMyProfile}
           showToast={showToast}
+          appointments={appointments}
+          setAppointments={setAppointments}
         />
       );
     }
@@ -369,11 +376,22 @@ export default function App() {
             setScreen={handleTabSwitch}
           />
         );
+      case 'appointments':
+        return (
+          <Appointments 
+            appointments={appointments}
+            setAppointments={setAppointments}
+            onClose={() => handleTabSwitch('dashboard')}
+            setScreen={handleTabSwitch}
+          />
+        );
       case 'marketplace':
         return (
           <PtMarketplace 
             onOpenProfile={handleOpenProfile}
             showToast={showToast}
+            appointments={appointments}
+            setAppointments={setAppointments}
           />
         );
       default:
