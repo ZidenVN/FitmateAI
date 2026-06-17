@@ -15,7 +15,16 @@ export default function UserProfile({ profile, onClose, posts, onUpdateProfile, 
 
   // Filter posts created by this profile
   const authorName = profile.name;
-  const userPosts = posts.filter(p => p.author.toLowerCase().includes(authorName.split(' ')[0].toLowerCase()) || (profile.isSelf && p.author.includes('Bạn')));
+  const cleanName = (name) => name.replace('(Bạn)', '').replace('HLV', '').trim().toLowerCase();
+  
+  const userPosts = posts.filter(p => {
+    if (profile.isSelf && (p.author.includes('Bạn') || p.author.includes('Hùng'))) {
+      return true;
+    }
+    const cleanAuthor = cleanName(p.author);
+    const cleanProfile = cleanName(authorName);
+    return cleanAuthor.includes(cleanProfile) || cleanProfile.includes(cleanAuthor);
+  });
 
   const handleConnect = () => {
     if (showToast) {

@@ -75,113 +75,96 @@ export default function WorkoutPlanner({ onCompleteTask, onWorkoutComplete, isWo
     { name: 'Full Body Stretching (Căng cơ nhẹ)', sets: '10 phút', rest: 'Thư giãn', calories: 30 }
   ];
 
-  // Helper to dynamically suggest AI alternatives based on exercise type
-  const getAiAlternatives = (exerciseName) => {
-    const nameLower = exerciseName.toLowerCase();
-    
-    if (nameLower.includes('bench press')) {
-      return [
-        { name: 'Incline Barbell Bench Press (Đẩy ngực dốc lên)', sets: '4 sets x 10 reps', rest: '90s', calories: 85 },
-        { name: 'Chest Fly Machine (Ép ngực bằng máy)', sets: '4 sets x 12 reps', rest: '60s', calories: 75 },
-        { name: 'Dips (Cơ ngực dưới & Tay sau)', sets: '4 sets x Max reps', rest: '60s', calories: 70 }
-      ];
-    }
-    if (nameLower.includes('tricep pushdown')) {
-      return [
-        { name: 'Overhead Dumbbell Extension (Tay sau qua đầu)', sets: '3 sets x 12 reps', rest: '60s', calories: 45 },
-        { name: 'Tricep Dumbbell Kickbacks (Tập tay sau)', sets: '3 sets x 12 reps', rest: '60s', calories: 45 },
-        { name: 'Skull Crushers (Nằm đẩy tạ sau đầu)', sets: '3 sets x 10 reps', rest: '60s', calories: 55 }
-      ];
-    }
-    if (nameLower.includes('incline dumbbell press') || nameLower.includes('incline dumbbell fly')) {
-      return [
-        { name: 'Incline Dumbbell Fly (Ngực dốc bay tạ)', sets: '3 sets x 12 reps', rest: '60s', calories: 65 },
-        { name: 'Push-ups (Hít đất truyền thống)', sets: '3 sets x 15 reps', rest: '60s', calories: 60 },
-        { name: 'Decline Dumbbell Press (Đẩy ngực dốc xuống)', sets: '3 sets x 12 reps', rest: '60s', calories: 75 }
-      ];
-    }
-    if (nameLower.includes('lat pulldown')) {
-      return [
-        { name: 'Bodyweight Pull-ups (Hít xà đơn)', sets: '4 sets x Max reps', rest: '90s', calories: 85 },
-        { name: 'Bent-over Barbell Row (Gập người chèo tạ)', sets: '4 sets x 10 reps', rest: '60s', calories: 85 },
-        { name: 'Seated Cable Row (Kéo cáp ngồi)', sets: '4 sets x 12 reps', rest: '60s', calories: 75 }
-      ];
-    }
-    if (nameLower.includes('dumbbell rows') || nameLower.includes('single-arm row')) {
-      return [
-        { name: 'Single-Arm Dumbbell Row (Kéo tạ một bên)', sets: '3 sets x 12 reps', rest: '60s', calories: 65 },
-        { name: 'T-Bar Row (Chèo thanh T lưng xô)', sets: '3 sets x 10 reps', rest: '60s', calories: 75 },
-        { name: 'Face Pulls (Kéo cáp cơ vai sau)', sets: '3 sets x 15 reps', rest: '60s', calories: 60 }
-      ];
-    }
-    if (nameLower.includes('squat') && !nameLower.includes('jump')) {
-      return [
-        { name: 'Dumbbell Goblet Squat (Gánh tạ tay)', sets: '4 sets x 12 reps', rest: '90s', calories: 90 },
-        { name: 'Bulgarian Split Squat (Squat một chân)', sets: '4 sets x 10 reps', rest: '60s', calories: 95 },
-        { name: 'Hack Squat Machine (Đạp tạ máy dốc)', sets: '4 sets x 10 reps', rest: '90s', calories: 105 }
-      ];
-    }
-    if (nameLower.includes('leg press')) {
-      return [
-        { name: 'Leg Extensions (Máy đá đùi trước)', sets: '3 sets x 12 reps', rest: '60s', calories: 75 },
-        { name: 'Dumbbell Lunges (Bước chùng chân tạ)', sets: '3 sets x 12 reps', rest: '60s', calories: 85 },
-        { name: 'Sumo Deadlift (Tạ đòn mông đùi)', sets: '3 sets x 10 reps', rest: '90s', calories: 90 }
-      ];
-    }
-    if (nameLower.includes('lunges')) {
-      return [
-        { name: 'Walking Lunges (Bước tiến chùng chân)', sets: '3 sets x 12 reps', rest: '60s', calories: 75 },
-        { name: 'Step-ups (Bước bục gỗ tạ tay)', sets: '3 sets x 12 reps', rest: '60s', calories: 65 },
-        { name: 'Glute Bridges (Nằm cầu mông bụng)', sets: '3 sets x 15 reps', rest: '60s', calories: 60 }
-      ];
-    }
-    if (nameLower.includes('jump squats')) {
-      return [
-        { name: 'Box Jumps (Bật nhảy bục gỗ)', sets: '3 sets x 10 reps', rest: '60s', calories: 65 },
-        { name: 'Kettlebell Swings (Vung tạ ấm)', sets: '3 sets x 15 reps', rest: '60s', calories: 70 },
-        { name: 'Mountain Climbers (Leo núi nhanh)', sets: '3 sets x 30 giây', rest: 'Cardio', calories: 55 }
-      ];
-    }
-    if (nameLower.includes('plank')) {
-      return [
-        { name: 'Ab Wheel Rollouts (Lăn bánh xe bụng)', sets: '3 sets x 10 reps', rest: '60s', calories: 55 },
-        { name: 'Hanging Leg Raises (Đu xà nâng chân)', sets: '3 sets x 12 reps', rest: '60s', calories: 45 },
-        { name: 'Side Plank (Plank nghiêng sườn)', sets: '3 sets x 45 giây', rest: '60s', calories: 45 }
-      ];
-    }
-    if (nameLower.includes('crunches') || nameLower.includes('twists')) {
-      return [
-        { name: 'Russian Twists (Xoay hông vặn bụng)', sets: '3 sets x 20 reps', rest: '60s', calories: 45 },
-        { name: 'Lying Leg Raises (Nằm nâng hai chân)', sets: '3 sets x 15 reps', rest: '60s', calories: 35 },
-        { name: 'Dead Bug (Tập cơ bụng sâu)', sets: '3 sets x 12 reps', rest: 'Phục hồi', calories: 35 }
-      ];
-    }
-    if (nameLower.includes('jogging') || nameLower.includes('run')) {
-      return [
-        { name: 'Elliptical Trainer (Máy chạy toàn thân)', sets: '15 phút', rest: 'Thả lỏng', calories: 110 },
-        { name: 'Rowing Machine (Máy chèo thuyền)', sets: '15 phút', rest: 'Toàn thân', calories: 115 },
-        { name: 'Stationary Cycling (Đạp xe tại chỗ)', sets: '15 phút', rest: 'Cardio', calories: 125 }
-      ];
-    }
-    if (nameLower.includes('walk')) {
-      return [
-        { name: 'Incline Walking (Đi bộ leo dốc máy)', sets: '20 phút', rest: 'Nhẹ nhàng', calories: 85 },
-        { name: 'Elliptical Slow Pace (Chạy máy chậm)', sets: '20 phút', rest: 'Phục hồi', calories: 75 },
-        { name: 'Leisure Cycling (Đạp xe nhẹ nhàng)', sets: '20 phút', rest: 'Thư giãn', calories: 75 }
-      ];
-    }
-    if (nameLower.includes('cycling') || nameLower.includes('rope')) {
-      return [
-        { name: 'Elliptical Cardio (Máy tập toàn thân)', sets: '20 phút', rest: 'Thả lỏng', calories: 140 },
-        { name: 'Rowing Machine (Máy chèo thuyền)', sets: '15 phút', rest: 'Toàn thân', calories: 140 },
-        { name: 'Stair Climber (Máy leo cầu thang)', sets: '12 phút', rest: 'Cơ đùi', calories: 160 }
-      ];
-    }
-    return [
-      { name: 'Kettlebell Halos (Cơ vai & bụng)', sets: '3 sets x 12 reps', rest: '60s', calories: 50 },
-      { name: 'Dumbbell Bicep Curls (Cuốn bắp tay trước)', sets: '3 sets x 12 reps', rest: '60s', calories: 45 },
-      { name: 'Russian Twists (Xoay hông vặn bụng)', sets: '3 sets x 20 reps', rest: '60s', calories: 40 }
+  // Dynamic exercise pool representing various movements
+  const exercisePool = [
+    { name: 'Incline Barbell Bench Press (Đẩy ngực dốc lên)', baseCalories: 85, sets: '4 sets x 10 reps', rest: '90s' },
+    { name: 'Chest Fly Machine (Ép ngực bằng máy)', baseCalories: 75, sets: '4 sets x 12 reps', rest: '60s' },
+    { name: 'Dips (Cơ ngực dưới & Tay sau)', baseCalories: 70, sets: '4 sets x Max reps', rest: '60s' },
+    { name: 'Overhead Dumbbell Extension (Tay sau qua đầu)', baseCalories: 45, sets: '3 sets x 12 reps', rest: '60s' },
+    { name: 'Tricep Dumbbell Kickbacks (Tập tay sau)', baseCalories: 45, sets: '3 sets x 12 reps', rest: '60s' },
+    { name: 'Skull Crushers (Nằm đẩy tạ sau đầu)', baseCalories: 55, sets: '3 sets x 10 reps', rest: '60s' },
+    { name: 'Incline Dumbbell Fly (Ngực dốc bay tạ)', baseCalories: 65, sets: '3 sets x 12 reps', rest: '60s' },
+    { name: 'Push-ups (Hít đất truyền thống)', baseCalories: 60, sets: '3 sets x 15 reps', rest: '60s' },
+    { name: 'Decline Dumbbell Press (Đẩy ngực dốc xuống)', baseCalories: 75, sets: '3 sets x 12 reps', rest: '60s' },
+    { name: 'Bodyweight Pull-ups (Hít xà đơn)', baseCalories: 85, sets: '4 sets x Max reps', rest: '90s' },
+    { name: 'Bent-over Barbell Row (Gập người chèo tạ)', baseCalories: 85, sets: '4 sets x 10 reps', rest: '60s' },
+    { name: 'Seated Cable Row (Kéo cáp ngồi)', baseCalories: 75, sets: '4 sets x 12 reps', rest: '60s' },
+    { name: 'Single-Arm Dumbbell Row (Kéo tạ một bên)', baseCalories: 65, sets: '3 sets x 12 reps', rest: '60s' },
+    { name: 'T-Bar Row (Chèo thanh T lưng xô)', baseCalories: 75, sets: '3 sets x 10 reps', rest: '60s' },
+    { name: 'Face Pulls (Kéo cáp cơ vai sau)', baseCalories: 60, sets: '3 sets x 15 reps', rest: '60s' },
+    { name: 'Dumbbell Goblet Squat (Gánh tạ tay)', baseCalories: 90, sets: '4 sets x 12 reps', rest: '90s' },
+    { name: 'Bulgarian Split Squat (Squat một chân)', baseCalories: 95, sets: '4 sets x 10 reps', rest: '60s' },
+    { name: 'Hack Squat Machine (Đạp tạ máy dốc)', baseCalories: 105, sets: '4 sets x 10 reps', rest: '90s' },
+    { name: 'Leg Extensions (Máy đá đùi trước)', baseCalories: 75, sets: '3 sets x 12 reps', rest: '60s' },
+    { name: 'Dumbbell Lunges (Bước chùng chân tạ)', baseCalories: 85, sets: '3 sets x 12 reps', rest: '60s' },
+    { name: 'Sumo Deadlift (Tạ đòn mông đùi)', baseCalories: 90, sets: '3 sets x 10 reps', rest: '90s' },
+    { name: 'Walking Lunges (Bước tiến chùng chân)', baseCalories: 75, sets: '3 sets x 12 reps', rest: '60s' },
+    { name: 'Step-ups (Bước bục gỗ tạ tay)', baseCalories: 65, sets: '3 sets x 12 reps', rest: '60s' },
+    { name: 'Glute Bridges (Nằm cầu mông bụng)', baseCalories: 60, sets: '3 sets x 15 reps', rest: '60s' },
+    { name: 'Box Jumps (Bật nhảy bục gỗ)', baseCalories: 65, sets: '3 sets x 10 reps', rest: '60s' },
+    { name: 'Kettlebell Swings (Vung tạ ấm)', baseCalories: 70, sets: '3 sets x 15 reps', rest: '60s' },
+    { name: 'Mountain Climbers (Leo núi nhanh)', baseCalories: 55, sets: '3 sets x 30 giây', rest: 'Cardio' },
+    { name: 'Ab Wheel Rollouts (Lăn bánh xe bụng)', baseCalories: 55, sets: '3 sets x 10 reps', rest: '60s' },
+    { name: 'Hanging Leg Raises (Đu xà nâng gối)', baseCalories: 45, sets: '3 sets x 12 reps', rest: '60s' },
+    { name: 'Side Plank (Plank nghiêng sườn)', baseCalories: 45, sets: '3 sets x 45 giây', rest: '60s' },
+    { name: 'Russian Twists (Xoay hông vặn bụng)', baseCalories: 45, sets: '3 sets x 20 reps', rest: '60s' },
+    { name: 'Lying Leg Raises (Nằm nâng hai chân)', baseCalories: 35, sets: '3 sets x 15 reps', rest: '60s' },
+    { name: 'Dead Bug (Tập cơ bụng sâu)', baseCalories: 35, sets: '3 sets x 12 reps', rest: 'Phục hồi' },
+    { name: 'Elliptical Trainer (Máy chạy toàn thân)', baseCalories: 110, sets: '15 phút', rest: 'Thả lỏng' },
+    { name: 'Rowing Machine (Máy chèo thuyền)', baseCalories: 115, sets: '15 phút', rest: 'Toàn thân' },
+    { name: 'Stationary Cycling (Đạp xe tại chỗ)', baseCalories: 125, sets: '15 phút', rest: 'Cardio' },
+    { name: 'Incline Walking (Đi bộ leo dốc máy)', baseCalories: 85, sets: '20 phút', rest: 'Nhẹ nhàng' },
+    { name: 'Elliptical Slow Pace (Chạy máy chậm)', baseCalories: 75, sets: '20 phút', rest: 'Phục hồi' },
+    { name: 'Leisure Cycling (Đạp xe nhẹ nhàng)', baseCalories: 75, sets: '20 phút', rest: 'Thư giãn' },
+    { name: 'Elliptical Cardio (Máy tập toàn thân)', baseCalories: 140, sets: '20 phút', rest: 'Thả lỏng' },
+    { name: 'Stair Climber (Máy leo cầu thang)', baseCalories: 160, sets: '12 phút', rest: 'Cơ đùi' },
+    { name: 'Kettlebell Halos (Cơ vai & bụng)', baseCalories: 50, sets: '3 sets x 12 reps', rest: '60s' },
+    { name: 'Dumbbell Bicep Curls (Cuốn bắp tay trước)', baseCalories: 45, sets: '3 sets x 12 reps', rest: '60s' }
+  ];
+
+  // Dynamically suggest AI alternatives based on target calories (+/- 5 to 10 kcal)
+  const getAiAlternatives = (targetEx) => {
+    const targetCalories = targetEx.calories || 60;
+    const targetName = targetEx.name;
+
+    // Filter out same exercise
+    const candidates = exercisePool.filter(ex => ex.name.toLowerCase() !== targetName.toLowerCase());
+
+    // Sort by calorie closeness
+    candidates.sort((a, b) => Math.abs(a.baseCalories - targetCalories) - Math.abs(b.baseCalories - targetCalories));
+
+    // Take top 6 closest to ensure variety, then pick 3
+    const topCandidates = candidates.slice(0, 6);
+    // Shuffle and pick 3
+    const shuffled = [...topCandidates].sort(() => 0.5 - Math.random());
+    const selected = shuffled.slice(0, 3);
+
+    // Apply the user's requested variation: 5 to 10 calories up/down
+    const offsets = [
+      Math.floor(Math.random() * 6) + 5,   // +5 to +10
+      -(Math.floor(Math.random() * 6) + 5), // -5 to -10
+      Math.floor(Math.random() * 9) - 4    // -4 to +4
     ];
+
+    // Map selected templates to the target adjusted calories
+    return selected.map((ex, idx) => {
+      const adjustedCalories = Math.max(targetCalories + offsets[idx], 10); // Don't let calories go below 10
+      
+      // Adjust sets/reps slightly based on the calorie difference
+      let adjustedSets = ex.sets;
+      if (offsets[idx] > 0 && ex.sets.includes('reps')) {
+        adjustedSets = ex.sets.replace(/(\d+)\s*reps/, (match, reps) => `${parseInt(reps) + 2} reps`);
+      } else if (offsets[idx] < 0 && ex.sets.includes('reps')) {
+        adjustedSets = ex.sets.replace(/(\d+)\s*reps/, (match, reps) => `${Math.max(parseInt(reps) - 2, 6)} reps`);
+      }
+
+      return {
+        name: ex.name,
+        sets: adjustedSets,
+        rest: ex.rest,
+        calories: adjustedCalories
+      };
+    });
   };
 
   // Get current day's exercises
@@ -267,7 +250,7 @@ export default function WorkoutPlanner({ onCompleteTask, onWorkoutComplete, isWo
   // Trigger AI suggestions modal
   const handleRequestSwap = (index, exercise) => {
     setSwapTarget({ index, exercise });
-    const suggestions = getAiAlternatives(exercise.name);
+    const suggestions = getAiAlternatives(exercise);
     setAiSuggestions(suggestions);
   };
 
