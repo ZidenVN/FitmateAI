@@ -1,11 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { Play, Square, Activity, Sparkles, Clock, AlertTriangle } from 'lucide-react';
+import { Play, Square, Activity, Sparkles, Clock, CheckCircle, Circle, Trophy, ArrowRight, RefreshCw, X } from 'lucide-react';
 
-export default function WorkoutPlanner({ onCompleteTask }) {
-  const [selectedDay, setSelectedDay] = useState('Th 4'); // Default Wednesday
+export default function WorkoutPlanner({ onCompleteTask, onWorkoutComplete, isWorkoutCompleted, setScreen }) {
+  const [selectedDay, setSelectedDay] = useState('Th 4'); // Default Wednesday (Today)
   const [fatigueMode, setFatigueMode] = useState(false);
   const [timerRunning, setTimerRunning] = useState(false);
   const [seconds, setSeconds] = useState(0);
+  const [activeExercises, setActiveExercises] = useState([]);
+  const [showSummary, setShowSummary] = useState(false);
+  const [summaryData, setSummaryData] = useState(null);
+
+  // AI Exercise Swap States
+  const [swapTarget, setSwapTarget] = useState(null); // { index, exercise }
+  const [aiSuggestions, setAiSuggestions] = useState([]);
+  const [toastMessage, setToastMessage] = useState('');
 
   const days = [
     { name: 'Th 2', label: 'T2' },
@@ -17,22 +25,174 @@ export default function WorkoutPlanner({ onCompleteTask }) {
     { name: 'CN', label: 'CN' }
   ];
 
-  // Exercises data
-  const standardExercises = [
-    { name: 'Flat Bench Press (Đẩy ngực phẳng)', sets: '4 sets x 10 reps', duration: '90s rest' },
-    { name: 'Incline Dumbbell Fly (Ngực dốc lên)', sets: '3 sets x 12 reps', duration: '60s rest' },
-    { name: 'Weighted Push-ups (Hít đất tạ)', sets: '3 sets x 15 reps', duration: '60s rest' },
-    { name: 'HIIT Treadmill Running (Chạy bộ)', sets: '15 phút', duration: 'Cường độ cao' }
+  // Daily unique exercises database stored in state to allow AI Swaps
+  const [workouts, setWorkouts] = useState({
+    'Th 2': [
+      { name: 'Flat Bench Press (Đẩy ngực phẳng)', sets: '4 sets x 10 reps', rest: '90s', calories: 80 },
+      { name: 'Tricep Pushdown (Cơ tay sau)', sets: '3 sets x 12 reps', rest: '60s', calories: 50 },
+      { name: 'Incline Dumbbell Press (Đẩy ngực trên)', sets: '3 sets x 12 reps', rest: '60s', calories: 70 },
+      { name: 'Treadmill Jogging (Chạy bộ nhẹ)', sets: '15 phút', rest: 'Cường độ vừa', calories: 120 }
+    ],
+    'Th 3': [
+      { name: 'Barbell Squat (Gánh đùi sau)', sets: '4 sets x 8 reps', rest: '90s', calories: 100 },
+      { name: 'Leg Press (Đạp đùi đúp)', sets: '3 sets x 10 reps', rest: '60s', calories: 80 },
+      { name: 'Dumbbell Lunges (Bước chùng chân)', sets: '3 sets x 12 reps', rest: '60s', calories: 70 },
+      { name: 'Jump Squats (Bật nhảy tại chỗ)', sets: '3 sets x 15 reps', rest: 'Cường độ cao', calories: 60 }
+    ],
+    'Th 4': [
+      { name: 'Lat Pulldown (Kéo xô lưng)', sets: '4 sets x 10 reps', rest: '90s', calories: 80 },
+      { name: 'Dumbbell Rows (Chèo tạ tay)', sets: '3 sets x 12 reps', rest: '60s', calories: 70 },
+      { name: 'Weighted Plank (Gồng bụng tạ)', sets: '3 sets x 60 giây', rest: '60s', calories: 50 },
+      { name: 'Bicycle Crunches (Đạp xe bụng)', sets: '3 sets x 20 reps', rest: 'Phục hồi', calories: 40 }
+    ],
+    'Th 5': [
+      { name: 'Treadmill Walk (Đi bộ thư giãn)', sets: '20 phút', rest: 'Thả lỏng', calories: 80 },
+      { name: 'Yoga Stretching (Căng cơ toàn thân)', sets: '15 phút', rest: 'Phục hồi', calories: 50 },
+      { name: 'Foam Rolling (Lăn giãn cơ bắp)', sets: '10 phút', rest: 'Massage', calories: 20 }
+    ],
+    'Th 6': [
+      { name: 'Kettlebell Swings (Vung tạ ấm)', sets: '4 sets x 15 reps', rest: '90s', calories: 90 },
+      { name: 'Burpees (Hít đất bật nhảy)', sets: '3 sets x 12 reps', rest: '60s', calories: 80 },
+      { name: 'Bodyweight Pull-ups (Hít xà đơn)', sets: '3 sets x Max reps', rest: '60s', calories: 60 },
+      { name: 'Mountain Climbers (Leo núi bụng)', sets: '3 sets x 30 giây', rest: 'Cơ bụng', calories: 50 }
+    ],
+    'Th 7': [
+      { name: 'Stationary Cycling (Đạp xe trong nhà)', sets: '20 phút', rest: 'Cơ đùi', calories: 150 },
+      { name: 'Jump Rope (Nhảy dây tốc độ)', sets: '3 sets x 2 phút', rest: 'Cardio', calories: 80 },
+      { name: 'Shadow Boxing (Đấm bốc giả lập)', sets: '10 phút', rest: 'Đốt mỡ', calories: 70 }
+    ],
+    'CN': [
+      { name: 'Active Recovery Stretching', sets: '20 phút', rest: 'Thư giãn', calories: 60 },
+      { name: 'Deep Breathing Meditation', sets: '10 phút', rest: 'Tinh thần', calories: 10 }
+    ]
+  });
+
+  // Wednesday (Today) Fatigue Mode adapted workouts
+  const wednesdayFatigueWorkouts = [
+    { name: 'Light Lat Pulldown (Kéo xô nhẹ)', sets: '3 sets x 12 reps (AI giảm tạ)', rest: '90s', calories: 50 },
+    { name: 'Light Dumbbell Rows (Chèo tạ nhẹ)', sets: '3 sets x 10 reps (AI giảm tạ)', rest: '60s', calories: 40 },
+    { name: 'Planks (Gồng bụng nhẹ)', sets: '3 sets x 30 giây', rest: '60s', calories: 30 },
+    { name: 'Full Body Stretching (Căng cơ nhẹ)', sets: '10 phút', rest: 'Thư giãn', calories: 30 }
   ];
 
-  const recoveryExercises = [
-    { name: 'Light Dumbbell Press (Đẩy tạ nhẹ)', sets: '3 sets x 12 reps (Tạ nhẹ)', duration: '90s rest' },
-    { name: 'Knee Push-ups (Hít đất quỳ gối)', sets: '3 sets x 10 reps', duration: '60s rest' },
-    { name: 'Treadmill Incline Walk (Đi bộ dốc)', sets: '20 phút', duration: 'Tốc độ vừa' },
-    { name: 'Yoga Stretching (Căng cơ thư giãn)', sets: '10 phút', duration: 'Phục hồi cơ bắp' }
-  ];
+  // Helper to dynamically suggest AI alternatives based on exercise type
+  const getAiAlternatives = (exerciseName) => {
+    const nameLower = exerciseName.toLowerCase();
+    
+    if (nameLower.includes('bench press')) {
+      return [
+        { name: 'Incline Barbell Bench Press (Đẩy ngực dốc lên)', sets: '4 sets x 10 reps', rest: '90s', calories: 85 },
+        { name: 'Chest Fly Machine (Ép ngực bằng máy)', sets: '4 sets x 12 reps', rest: '60s', calories: 75 },
+        { name: 'Dips (Cơ ngực dưới & Tay sau)', sets: '4 sets x Max reps', rest: '60s', calories: 70 }
+      ];
+    }
+    if (nameLower.includes('tricep pushdown')) {
+      return [
+        { name: 'Overhead Dumbbell Extension (Tay sau qua đầu)', sets: '3 sets x 12 reps', rest: '60s', calories: 45 },
+        { name: 'Tricep Dumbbell Kickbacks (Tập tay sau)', sets: '3 sets x 12 reps', rest: '60s', calories: 45 },
+        { name: 'Skull Crushers (Nằm đẩy tạ sau đầu)', sets: '3 sets x 10 reps', rest: '60s', calories: 55 }
+      ];
+    }
+    if (nameLower.includes('incline dumbbell press') || nameLower.includes('incline dumbbell fly')) {
+      return [
+        { name: 'Incline Dumbbell Fly (Ngực dốc bay tạ)', sets: '3 sets x 12 reps', rest: '60s', calories: 65 },
+        { name: 'Push-ups (Hít đất truyền thống)', sets: '3 sets x 15 reps', rest: '60s', calories: 60 },
+        { name: 'Decline Dumbbell Press (Đẩy ngực dốc xuống)', sets: '3 sets x 12 reps', rest: '60s', calories: 75 }
+      ];
+    }
+    if (nameLower.includes('lat pulldown')) {
+      return [
+        { name: 'Bodyweight Pull-ups (Hít xà đơn)', sets: '4 sets x Max reps', rest: '90s', calories: 85 },
+        { name: 'Bent-over Barbell Row (Gập người chèo tạ)', sets: '4 sets x 10 reps', rest: '60s', calories: 85 },
+        { name: 'Seated Cable Row (Kéo cáp ngồi)', sets: '4 sets x 12 reps', rest: '60s', calories: 75 }
+      ];
+    }
+    if (nameLower.includes('dumbbell rows') || nameLower.includes('single-arm row')) {
+      return [
+        { name: 'Single-Arm Dumbbell Row (Kéo tạ một bên)', sets: '3 sets x 12 reps', rest: '60s', calories: 65 },
+        { name: 'T-Bar Row (Chèo thanh T lưng xô)', sets: '3 sets x 10 reps', rest: '60s', calories: 75 },
+        { name: 'Face Pulls (Kéo cáp cơ vai sau)', sets: '3 sets x 15 reps', rest: '60s', calories: 60 }
+      ];
+    }
+    if (nameLower.includes('squat') && !nameLower.includes('jump')) {
+      return [
+        { name: 'Dumbbell Goblet Squat (Gánh tạ tay)', sets: '4 sets x 12 reps', rest: '90s', calories: 90 },
+        { name: 'Bulgarian Split Squat (Squat một chân)', sets: '4 sets x 10 reps', rest: '60s', calories: 95 },
+        { name: 'Hack Squat Machine (Đạp tạ máy dốc)', sets: '4 sets x 10 reps', rest: '90s', calories: 105 }
+      ];
+    }
+    if (nameLower.includes('leg press')) {
+      return [
+        { name: 'Leg Extensions (Máy đá đùi trước)', sets: '3 sets x 12 reps', rest: '60s', calories: 75 },
+        { name: 'Dumbbell Lunges (Bước chùng chân tạ)', sets: '3 sets x 12 reps', rest: '60s', calories: 85 },
+        { name: 'Sumo Deadlift (Tạ đòn mông đùi)', sets: '3 sets x 10 reps', rest: '90s', calories: 90 }
+      ];
+    }
+    if (nameLower.includes('lunges')) {
+      return [
+        { name: 'Walking Lunges (Bước tiến chùng chân)', sets: '3 sets x 12 reps', rest: '60s', calories: 75 },
+        { name: 'Step-ups (Bước bục gỗ tạ tay)', sets: '3 sets x 12 reps', rest: '60s', calories: 65 },
+        { name: 'Glute Bridges (Nằm cầu mông bụng)', sets: '3 sets x 15 reps', rest: '60s', calories: 60 }
+      ];
+    }
+    if (nameLower.includes('jump squats')) {
+      return [
+        { name: 'Box Jumps (Bật nhảy bục gỗ)', sets: '3 sets x 10 reps', rest: '60s', calories: 65 },
+        { name: 'Kettlebell Swings (Vung tạ ấm)', sets: '3 sets x 15 reps', rest: '60s', calories: 70 },
+        { name: 'Mountain Climbers (Leo núi nhanh)', sets: '3 sets x 30 giây', rest: 'Cardio', calories: 55 }
+      ];
+    }
+    if (nameLower.includes('plank')) {
+      return [
+        { name: 'Ab Wheel Rollouts (Lăn bánh xe bụng)', sets: '3 sets x 10 reps', rest: '60s', calories: 55 },
+        { name: 'Hanging Leg Raises (Đu xà nâng chân)', sets: '3 sets x 12 reps', rest: '60s', calories: 45 },
+        { name: 'Side Plank (Plank nghiêng sườn)', sets: '3 sets x 45 giây', rest: '60s', calories: 45 }
+      ];
+    }
+    if (nameLower.includes('crunches') || nameLower.includes('twists')) {
+      return [
+        { name: 'Russian Twists (Xoay hông vặn bụng)', sets: '3 sets x 20 reps', rest: '60s', calories: 45 },
+        { name: 'Lying Leg Raises (Nằm nâng hai chân)', sets: '3 sets x 15 reps', rest: '60s', calories: 35 },
+        { name: 'Dead Bug (Tập cơ bụng sâu)', sets: '3 sets x 12 reps', rest: 'Phục hồi', calories: 35 }
+      ];
+    }
+    if (nameLower.includes('jogging') || nameLower.includes('run')) {
+      return [
+        { name: 'Elliptical Trainer (Máy chạy toàn thân)', sets: '15 phút', rest: 'Thả lỏng', calories: 110 },
+        { name: 'Rowing Machine (Máy chèo thuyền)', sets: '15 phút', rest: 'Toàn thân', calories: 115 },
+        { name: 'Stationary Cycling (Đạp xe tại chỗ)', sets: '15 phút', rest: 'Cardio', calories: 125 }
+      ];
+    }
+    if (nameLower.includes('walk')) {
+      return [
+        { name: 'Incline Walking (Đi bộ leo dốc máy)', sets: '20 phút', rest: 'Nhẹ nhàng', calories: 85 },
+        { name: 'Elliptical Slow Pace (Chạy máy chậm)', sets: '20 phút', rest: 'Phục hồi', calories: 75 },
+        { name: 'Leisure Cycling (Đạp xe nhẹ nhàng)', sets: '20 phút', rest: 'Thư giãn', calories: 75 }
+      ];
+    }
+    if (nameLower.includes('cycling') || nameLower.includes('rope')) {
+      return [
+        { name: 'Elliptical Cardio (Máy tập toàn thân)', sets: '20 phút', rest: 'Thả lỏng', calories: 140 },
+        { name: 'Rowing Machine (Máy chèo thuyền)', sets: '15 phút', rest: 'Toàn thân', calories: 140 },
+        { name: 'Stair Climber (Máy leo cầu thang)', sets: '12 phút', rest: 'Cơ đùi', calories: 160 }
+      ];
+    }
+    return [
+      { name: 'Kettlebell Halos (Cơ vai & bụng)', sets: '3 sets x 12 reps', rest: '60s', calories: 50 },
+      { name: 'Dumbbell Bicep Curls (Cuốn bắp tay trước)', sets: '3 sets x 12 reps', rest: '60s', calories: 45 },
+      { name: 'Russian Twists (Xoay hông vặn bụng)', sets: '3 sets x 20 reps', rest: '60s', calories: 40 }
+    ];
+  };
 
-  const currentExercises = fatigueMode ? recoveryExercises : standardExercises;
+  // Get current day's exercises
+  const getDailyExercises = () => {
+    if (selectedDay === 'Th 4' && fatigueMode) {
+      return wednesdayFatigueWorkouts;
+    }
+    return workouts[selectedDay] || [];
+  };
+
+  const currentExercises = getDailyExercises();
 
   // Timer logic
   useEffect(() => {
@@ -49,14 +209,53 @@ export default function WorkoutPlanner({ onCompleteTask }) {
 
   const startWorkout = () => {
     setSeconds(0);
+    const initialized = currentExercises.map((ex, idx) => ({
+      ...ex,
+      id: idx,
+      completed: false
+    }));
+    setActiveExercises(initialized);
     setTimerRunning(true);
+    setShowSummary(false);
   };
 
-  const stopWorkout = () => {
+  const toggleExerciseStatus = (id) => {
+    const updated = activeExercises.map(ex => {
+      if (ex.id === id) {
+        return { ...ex, completed: !ex.completed };
+      }
+      return ex;
+    });
+    setActiveExercises(updated);
+
+    if (updated.every(ex => ex.completed)) {
+      finishWorkout(updated, seconds);
+    }
+  };
+
+  const finishWorkout = (exercisesList, timeInSeconds) => {
     setTimerRunning(false);
-    onCompleteTask(2); // Complete task ID 2: Tập luyện 30 phút
-    alert(`Chúc mừng! Bạn đã hoàn thành buổi tập kéo dài ${formatTime(seconds)}.`);
-    setSeconds(0);
+    const completedList = exercisesList.filter(ex => ex.completed);
+    const totalCal = completedList.reduce((sum, ex) => sum + ex.calories, 0);
+    const timeFormatted = formatTime(timeInSeconds);
+
+    const summary = {
+      time: timeFormatted,
+      calories: totalCal,
+      exercises: completedList
+    };
+
+    setSummaryData(summary);
+    setShowSummary(true);
+
+    onCompleteTask(2); // Complete task ID 2: Tập luyện
+    if (onWorkoutComplete) {
+      onWorkoutComplete(summary);
+    }
+  };
+
+  const stopWorkoutManually = () => {
+    finishWorkout(activeExercises, seconds);
   };
 
   const formatTime = (totalSeconds) => {
@@ -65,8 +264,240 @@ export default function WorkoutPlanner({ onCompleteTask }) {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // Trigger AI suggestions modal
+  const handleRequestSwap = (index, exercise) => {
+    setSwapTarget({ index, exercise });
+    const suggestions = getAiAlternatives(exercise.name);
+    setAiSuggestions(suggestions);
+  };
+
+  // Perform exercise swap inline without alerts
+  const handleExecuteSwap = (newExercise) => {
+    if (swapTarget === null) return;
+    const { index } = swapTarget;
+    
+    // Update workouts state
+    const dayWorkouts = [...workouts[selectedDay]];
+    dayWorkouts[index] = newExercise;
+    
+    setWorkouts({
+      ...workouts,
+      [selectedDay]: dayWorkouts
+    });
+
+    setSwapTarget(null);
+    setAiSuggestions([]);
+
+    // Inline Toast instead of browser alert
+    setToastMessage("AI đã hoán đổi bài tập thành công! 🔄");
+    setTimeout(() => setToastMessage(""), 2500);
+  };
+
+  // Validation conditions
+  const isToday = selectedDay === 'Th 4';
+  const canStart = isToday && !isWorkoutCompleted;
+
   return (
-    <div className="screen-content animate-slide-up">
+    <div className="screen-content animate-slide-up" style={{ position: 'relative' }}>
+      
+      {/* Inline Toast Banner */}
+      {toastMessage && (
+        <div className="animate-slide-up" style={{
+          position: 'absolute',
+          top: '20px',
+          left: '20px',
+          right: '20px',
+          background: 'var(--bg-card-solid)',
+          border: '1px solid var(--accent-green)',
+          color: 'var(--text-primary)',
+          padding: '12px 16px',
+          borderRadius: '14px',
+          fontSize: '13px',
+          fontWeight: 600,
+          textAlign: 'left',
+          zIndex: 1005,
+          boxShadow: '0 8px 32px rgba(57, 255, 20, 0.2)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px'
+        }}>
+          <span style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            background: 'rgba(57, 255, 20, 0.15)', 
+            borderRadius: '50%', 
+            padding: '4px' 
+          }}>
+            <CheckCircle size={14} color="var(--accent-green)" />
+          </span>
+          <span>{toastMessage}</span>
+        </div>
+      )}
+
+      {/* 1. Modal: AI Exercise Swap Suggestions */}
+      {swapTarget && (
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'rgba(12, 15, 18, 0.95)',
+          zIndex: 1002,
+          borderRadius: '30px',
+          padding: '24px 20px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '16px'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontWeight: 800, fontSize: '15px', color: 'var(--accent-green)' }}>AI Adaptive Swap</span>
+            <button 
+              onClick={() => setSwapTarget(null)}
+              style={{ background: 'rgba(255,255,255,0.05)', border: 'none', color: 'white', borderRadius: '50%', width: '28px', height: '28px', cursor: 'pointer' }}
+            >
+              <X size={14} />
+            </button>
+          </div>
+
+          <div>
+            <span className="subtitle" style={{ fontSize: '10px' }}>Bài gốc cần thay thế:</span>
+            <div style={{ fontSize: '13px', fontWeight: 700, marginTop: '2px' }}>{swapTarget.exercise.name}</div>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', flex: 1, overflowY: 'auto' }}>
+            <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-secondary)' }}>AI Gợi ý thay thế phù hợp:</span>
+            
+            {aiSuggestions.map((sug, idx) => (
+              <div 
+                key={idx}
+                className="glass-card highlight-green" 
+                style={{ 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  gap: '6px', 
+                  cursor: 'pointer',
+                  borderColor: 'rgba(57, 255, 20, 0.2)' 
+                }}
+                onClick={() => handleExecuteSwap(sug)}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 700 }}>{sug.name}</span>
+                  <span style={{ fontSize: '11px', color: 'var(--accent-orange)', fontWeight: 700 }}>-{sug.calories} kcal</span>
+                </div>
+                <div style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>
+                  {sug.sets} • Nghỉ {sug.rest}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 2. Modal: Summary Deficit Calorie */}
+      {showSummary && summaryData && (
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'rgba(12, 15, 18, 0.95)',
+          zIndex: 1000,
+          borderRadius: '30px',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: '24px 20px',
+          gap: '16px'
+        }}>
+          <div style={{
+            width: '60px',
+            height: '60px',
+            borderRadius: '50%',
+            background: 'rgba(255, 87, 34, 0.1)',
+            color: 'var(--accent-orange)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            border: '2px solid var(--accent-orange)'
+          }}>
+            <Trophy size={32} />
+          </div>
+
+          <div style={{ textAlign: 'center' }}>
+            <h3 className="title-medium" style={{ fontSize: '18px' }}>
+              {summaryData.exercises.length === activeExercises.length ? "Buổi tập trọn vẹn! 🏆" : "Hoàn thành sớm! ⏱️"}
+            </h3>
+            
+            {/* Inline Streak Reward Feedback inside Modal */}
+            {summaryData.exercises.length >= 2 ? (
+              <p style={{ color: 'var(--accent-green)', fontSize: '12.5px', fontWeight: 700, marginTop: '6px', background: 'rgba(57, 255, 20, 0.1)', padding: '4px 12px', borderRadius: '20px', display: 'inline-block' }}>
+                Đã cộng +1 ngày Streak tập luyện! 🔥
+              </p>
+            ) : (
+              <p style={{ color: 'var(--accent-orange)', fontSize: '11px', marginTop: '6px', background: 'rgba(255, 87, 34, 0.1)', padding: '4px 12px', borderRadius: '20px', display: 'inline-block', fontWeight: 600 }}>
+                Tập thêm {2 - summaryData.exercises.length} bài nữa để nhận Streak nhé! 💪
+              </p>
+            )}
+          </div>
+
+          {/* Stats Box */}
+          <div style={{ display: 'flex', gap: '12px', width: '100%', justifyContent: 'center', margin: '8px 0' }}>
+            <div className="glass-card" style={{ flex: 1, textAlign: 'center', padding: '12px 6px' }}>
+              <span className="subtitle" style={{ fontSize: '9px' }}>Thời gian</span>
+              <div style={{ fontSize: '16px', fontWeight: 800, color: 'white', marginTop: '2px' }}>
+                {summaryData.time}
+              </div>
+            </div>
+            <div className="glass-card" style={{ flex: 1, textAlign: 'center', padding: '12px 6px', borderColor: 'var(--accent-orange)' }}>
+              <span className="subtitle" style={{ fontSize: '9px' }}>Calo tiêu hao</span>
+              <div style={{ fontSize: '16px', fontWeight: 800, color: 'var(--accent-orange)', marginTop: '2px' }}>
+                -{summaryData.calories} kcal
+              </div>
+            </div>
+          </div>
+
+          {/* Exercises Deficit Breakdown List */}
+          <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '180px', overflowY: 'auto' }}>
+            <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-secondary)' }}>Báo cáo thâm hụt từng bài:</span>
+            {summaryData.exercises.map((ex, idx) => (
+              <div key={idx} style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                fontSize: '11px',
+                padding: '6px 10px',
+                background: 'rgba(255,255,255,0.02)',
+                borderRadius: '8px',
+                border: '1px solid var(--border-color)'
+              }}>
+                <span style={{ color: 'var(--text-primary)', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', maxWidth: '200px' }}>
+                  {ex.name}
+                </span>
+                <span style={{ color: 'var(--accent-orange)', fontWeight: 700 }}>-{ex.calories} kcal</span>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', marginTop: '10px' }}>
+            <button 
+              className="btn-primary btn-orange" 
+              onClick={() => {
+                setShowSummary(false);
+                if (setScreen) setScreen('dashboard');
+              }} 
+              style={{ width: '100%' }}
+            >
+              Về Trang chủ (Xem Streak)
+              <ArrowRight size={16} />
+            </button>
+            <button 
+              className="btn-secondary" 
+              onClick={() => setShowSummary(false)} 
+              style={{ width: '100%', padding: '10px' }}
+            >
+              Xem lại Lịch tập
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Title */}
       <div>
         <h2 className="title-large" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -76,8 +507,8 @@ export default function WorkoutPlanner({ onCompleteTask }) {
         <p className="subtitle">Lập lịch tập thích ứng 24/7 dựa trên thể trạng</p>
       </div>
 
-      {/* Week Calendar Ribbon */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '4px' }}>
+      {/* Week Calendar Ribbon (Disabled if training) */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '4px', opacity: timerRunning ? 0.5 : 1, pointerEvents: timerRunning ? 'none' : 'auto' }}>
         {days.map((day) => (
           <button
             key={day.name}
@@ -116,7 +547,9 @@ export default function WorkoutPlanner({ onCompleteTask }) {
           display: 'flex', 
           flexDirection: 'column', 
           gap: '10px',
-          borderColor: fatigueMode ? 'rgba(57, 255, 20, 0.3)' : 'var(--border-color)' 
+          borderColor: fatigueMode ? 'rgba(57, 255, 20, 0.3)' : 'var(--border-color)',
+          opacity: timerRunning ? 0.5 : 1,
+          pointerEvents: timerRunning ? 'none' : 'auto'
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -127,6 +560,7 @@ export default function WorkoutPlanner({ onCompleteTask }) {
           <label className="switch" style={{ position: 'relative', display: 'inline-block', width: '40px', height: '20px' }}>
             <input 
               type="checkbox" 
+              disabled={selectedDay !== 'Th 4'}
               checked={fatigueMode} 
               onChange={() => setFatigueMode(!fatigueMode)}
               style={{ opacity: 0, width: 0, height: 0 }}
@@ -137,7 +571,8 @@ export default function WorkoutPlanner({ onCompleteTask }) {
               inset: 0,
               backgroundColor: fatigueMode ? 'var(--accent-green)' : '#2d3748',
               borderRadius: '20px',
-              transition: '0.4s'
+              transition: '0.4s',
+              opacity: selectedDay !== 'Th 4' ? 0.3 : 1
             }}>
               <span style={{
                 position: 'absolute',
@@ -171,45 +606,105 @@ export default function WorkoutPlanner({ onCompleteTask }) {
       {/* Exercise List */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: '13px', fontWeight: 700 }}>Danh sách bài tập ({selectedDay})</span>
-          <span className="subtitle" style={{ fontSize: '11px' }}>4 bài tập • 45 phút</span>
+          <span style={{ fontSize: '13px', fontWeight: 700 }}>
+            {timerRunning ? 'Bảng kiểm tra buổi tập' : `Danh sách bài tập (${selectedDay})`}
+          </span>
+          <span className="subtitle" style={{ fontSize: '11px' }}>
+            {currentExercises.length} bài tập • ~45 phút
+          </span>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {currentExercises.map((ex, index) => (
-            <div 
-              key={index}
-              className="glass-card" 
-              style={{ 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                alignItems: 'center',
-                padding: '12px 14px',
-                background: 'rgba(255, 255, 255, 0.01)'
-              }}
-            >
-              <div>
-                <div style={{ fontSize: '13px', fontWeight: 700 }}>{ex.name}</div>
-                <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                  {ex.sets}
+          {timerRunning ? (
+            /* Active Training Exercise Checkboxes */
+            activeExercises.map((ex) => (
+              <div 
+                key={ex.id}
+                onClick={() => toggleExerciseStatus(ex.id)}
+                className="glass-card animate-slide-in"
+                style={{ 
+                  display: 'flex', 
+                  alignItems: 'center',
+                  gap: '12px',
+                  padding: '12px 14px',
+                  background: ex.completed ? 'rgba(57, 255, 20, 0.03)' : 'rgba(255, 255, 255, 0.02)',
+                  borderColor: ex.completed ? 'var(--accent-green)' : 'var(--border-color)',
+                  cursor: 'pointer'
+                }}
+              >
+                {ex.completed ? (
+                  <CheckCircle size={18} color="var(--accent-green)" />
+                ) : (
+                  <Circle size={18} color="var(--text-secondary)" />
+                )}
+                <div style={{ flex: 1 }}>
+                  <div style={{ 
+                    fontSize: '13px', 
+                    fontWeight: 700,
+                    textDecoration: ex.completed ? 'line-through' : 'none',
+                    color: ex.completed ? 'var(--text-secondary)' : 'var(--text-primary)'
+                  }}>
+                    {ex.name}
+                  </div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                    {ex.sets} • <span style={{ color: 'var(--accent-orange)' }}>-{ex.calories} kcal</span>
+                  </div>
                 </div>
               </div>
-              <span style={{ 
-                fontSize: '11px', 
-                color: fatigueMode ? 'var(--accent-green)' : 'var(--text-secondary)', 
-                background: fatigueMode ? 'rgba(57, 255, 20, 0.05)' : 'rgba(255, 255, 255, 0.02)',
-                padding: '4px 8px',
-                borderRadius: '8px',
-                fontWeight: 600
-              }}>
-                {ex.duration}
-              </span>
-            </div>
-          ))}
+            ))
+          ) : (
+            /* Regular Read-only Exercises List */
+            currentExercises.map((ex, index) => (
+              <div 
+                key={index}
+                className="glass-card" 
+                style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center',
+                  padding: '12px 14px',
+                  background: 'rgba(255, 255, 255, 0.01)'
+                }}
+              >
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '13px', fontWeight: 700 }}>{ex.name}</div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <span>{ex.sets}</span>
+                    <span>•</span>
+                    <span style={{ color: 'var(--accent-orange)', fontWeight: 600 }}>-{ex.calories} kcal</span>
+                  </div>
+                </div>
+                
+                {/* Swap / Suggest Button */}
+                {!isWorkoutCompleted && (
+                  <button 
+                    onClick={() => handleRequestSwap(index, ex)}
+                    style={{
+                      background: 'rgba(57, 255, 20, 0.05)',
+                      border: '1px solid rgba(57, 255, 20, 0.15)',
+                      color: 'var(--accent-green)',
+                      fontSize: '10px',
+                      fontWeight: 700,
+                      padding: '4px 10px',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    <RefreshCw size={10} />
+                    Đổi bài
+                  </button>
+                )}
+              </div>
+            ))
+          )}
         </div>
       </div>
 
-      {/* Floating/Bottom Action Timer */}
+      {/* Floating/Bottom Action Timer & Disabled States */}
       {timerRunning ? (
         <div 
           className="glass-card animate-pulse-slow" 
@@ -234,7 +729,7 @@ export default function WorkoutPlanner({ onCompleteTask }) {
             </div>
           </div>
           <button 
-            onClick={stopWorkout}
+            onClick={stopWorkoutManually}
             style={{
               background: 'var(--accent-orange)',
               border: 'none',
@@ -252,10 +747,40 @@ export default function WorkoutPlanner({ onCompleteTask }) {
           </button>
         </div>
       ) : (
-        <button className="btn-primary btn-orange" onClick={startWorkout} style={{ marginTop: 'auto' }}>
-          <Play size={16} fill="black" />
-          Bắt đầu tập ngay
-        </button>
+        /* Action buttons with validation rules */
+        <div style={{ marginTop: 'auto' }}>
+          {isWorkoutCompleted && isToday ? (
+            /* Completed Today */
+            <div className="glass-card" style={{
+              background: 'rgba(57, 255, 20, 0.05)',
+              borderColor: 'var(--accent-green)',
+              textAlign: 'center',
+              padding: '12px'
+            }}>
+              <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--accent-green)' }}>
+                Buổi tập hôm nay đã được hoàn thành! 🏆
+              </span>
+            </div>
+          ) : !isToday ? (
+            /* Selected day is NOT today */
+            <div className="glass-card" style={{
+              background: 'rgba(255, 255, 255, 0.02)',
+              borderColor: 'var(--border-color)',
+              textAlign: 'center',
+              padding: '12px'
+            }}>
+              <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                Chỉ có thể bắt đầu tập bài của ngày hôm nay (Thứ 4)
+              </span>
+            </div>
+          ) : (
+            /* Can Start */
+            <button className="btn-primary btn-orange" onClick={startWorkout}>
+              <Play size={16} fill="black" />
+              Bắt đầu tập ngay
+            </button>
+          )}
+        </div>
       )}
     </div>
   );

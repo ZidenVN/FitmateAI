@@ -365,3 +365,69 @@ h1, h2, h3, h4 {
 .animate-slide-in {
   animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* --- Glowing & Levitating Streak Card (when incomplete) --- */
+@keyframes levitateAndGlow {
+  0% {
+    transform: translateY(0);
+    box-shadow: 0 0 15px rgba(255, 87, 34, 0.1), 0 4px 12px 0 rgba(0, 0, 0, 0.3);
+    border-color: rgba(255, 87, 34, 0.3);
+  }
+  50% {
+    transform: translateY(-4px);
+    box-shadow: 0 0 25px rgba(255, 87, 34, 0.25), 0 8px 20px 0 rgba(255, 87, 34, 0.15);
+    border-color: rgba(255, 87, 34, 0.75);
+  }
+  100% {
+    transform: translateY(0);
+    box-shadow: 0 0 15px rgba(255, 87, 34, 0.1), 0 4px 12px 0 rgba(0, 0, 0, 0.3);
+    border-color: rgba(255, 87, 34, 0.3);
+  }
+}
+
+.streak-card-glow {
+  animation: levitateAndGlow 3s infinite ease-in-out;
+  border-width: 1.5px !important;
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.streak-card-glow:hover {
+  transform: translateY(-5px) scale(1.01);
+  border-color: rgba(255, 87, 34, 0.9);
+}
+
+/* --- Fizz-out Dissolving Animation (when completed) --- */
+@keyframes fizzOut {
+  0% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+    filter: blur(0px);
+    max-height: 200px;
+    margin-bottom: 20px;
+    padding: 16px;
+  }
+  30% {
+    transform: scale(0.98) translateY(-4px);
+    opacity: 0.9;
+    filter: blur(1px);
+  }
+  100% {
+    transform: scale(0.85) translateY(-30px);
+    opacity: 0;
+    filter: blur(12px);
+    max-height: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    border-width: 0;
+  }
+}
+
+.animate-fizz-out {
+  animation: fizzOut 1s cubic-bezier(0.55, 0, 0.55, 0.2) forwards;
+  pointer-events: none;
+  overflow: hidden;
+}
+
