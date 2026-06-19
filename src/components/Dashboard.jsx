@@ -4,6 +4,8 @@ import { Flame, Trophy, ArrowUpRight, TrendingUp, Zap, Menu, X, User, LogOut, Ch
 export default function Dashboard({ 
   streak, 
   setStreak, 
+  rewardPoints,
+  setRewardPoints,
   caloriesConsumed, 
   caloriesBurned = 0,
   workoutSummary = null,
@@ -18,6 +20,13 @@ export default function Dashboard({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [isFizzing, setIsFizzing] = useState(false);
   const [showStreakCardCompleted, setShowStreakCardCompleted] = useState(justCompletedWorkout);
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+  
+  // Withdraw modal states
+  const [bankName, setBankName] = useState('');
+  const [accountNumber, setAccountNumber] = useState('');
+  const [accountName, setAccountName] = useState('');
+  const [withdrawCoins, setWithdrawCoins] = useState('');
 
   useEffect(() => {
     if (justCompletedWorkout) {
@@ -279,16 +288,38 @@ export default function Dashboard({
             <p className="subtitle">Chào mừng trở lại, {myProfile?.name?.replace('(Bạn)', '').trim() || 'Hội viên'} 👋</p>
           </div>
         </div>
-        <div className="glass-card" style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: '6px', 
-          padding: '6px 12px', 
-          borderRadius: '12px',
-          borderColor: 'rgba(255, 87, 34, 0.2)' 
-        }} onClick={() => setStreak(s => s + 1)}>
-          <Flame color="var(--accent-orange)" fill="var(--accent-orange)" size={18} />
-          <span style={{ fontWeight: 700, fontSize: '14px', color: 'var(--accent-orange)' }}>{streak} ngày</span>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          {/* Streak Badge */}
+          <div className="glass-card" style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '5px', 
+            padding: '6px 10px', 
+            borderRadius: '12px',
+            borderColor: 'rgba(255, 87, 34, 0.2)',
+            cursor: 'pointer'
+          }} onClick={() => {
+            setStreak(s => s + 1);
+            if (showToast) showToast('Chúc mừng chuỗi phong độ của bạn! 🔥', 'success');
+          }}>
+            <Flame color="var(--accent-orange)" fill="var(--accent-orange)" size={16} />
+            <span style={{ fontWeight: 700, fontSize: '12.5px', color: 'var(--accent-orange)' }}>{streak} ngày</span>
+          </div>
+
+          {/* Reward Points Badge */}
+          <div className="glass-card" style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '5px', 
+            padding: '6px 10px', 
+            borderRadius: '12px',
+            borderColor: 'rgba(255, 215, 0, 0.35)',
+            background: 'rgba(255, 215, 0, 0.05)',
+            cursor: 'pointer'
+          }} onClick={() => setShowWithdrawModal(true)}>
+            <Trophy color="#ffd700" fill="#ffd700" size={16} />
+            <span style={{ fontWeight: 700, fontSize: '12.5px', color: '#ffd700' }}>{rewardPoints} xu</span>
+          </div>
         </div>
       </div>
 
@@ -466,7 +497,7 @@ export default function Dashboard({
             </div>
             <h5 style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-primary)' }}>Tích lũy Streak tập luyện</h5>
             <p className="subtitle" style={{ fontSize: '10.5px', color: 'var(--text-secondary)', lineHeight: '1.3' }}>
-              Nhấn vào đây để xem lịch tập. Hoàn thành ít nhất **2 bài tập** để nhận Streak nhé! 🔥
+              Nhấn vào đây để xem lịch tập. Hoàn thành ít nhất **2 bài tập** để tăng chuỗi Streak khích lệ tinh thần nhé! 🔥
             </p>
           </div>
         </div>
@@ -495,8 +526,196 @@ export default function Dashboard({
             </div>
             <h5 style={{ fontSize: '12px', fontWeight: 700, color: 'var(--accent-green)' }}>Đã tăng chuỗi Streak!</h5>
             <p className="subtitle" style={{ fontSize: '10.5px', color: 'var(--text-primary)', lineHeight: '1.3' }}>
-              Tuyệt vời! Bạn đã tích lũy và kéo dài chuỗi streak ngày hôm nay thành **{streak} ngày**. Giao diện này đang sủi bọt biến mất...
+              Tuyệt vời! Bạn đã kéo dài chuỗi streak thành **{streak} ngày** để duy trì động lực tập luyện! (Streak tập không quy đổi ra điểm thưởng) 🌟
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* Withdraw Modal */}
+      {showWithdrawModal && (
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'rgba(12, 15, 18, 0.96)',
+          zIndex: 2000,
+          borderRadius: '30px',
+          display: 'flex',
+          flexDirection: 'column',
+          padding: '24px 20px',
+          gap: '14px',
+          overflowY: 'auto'
+        }}>
+          {/* Header */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontWeight: 800, fontSize: '16px', color: '#ffd700', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Trophy size={18} /> Rút Tiền & Quy Đổi
+            </span>
+            <button 
+              onClick={() => {
+                setShowWithdrawModal(false);
+                setBankName('');
+                setAccountNumber('');
+                setAccountName('');
+                setWithdrawCoins('');
+              }}
+              style={{
+                background: 'rgba(255,255,255,0.05)',
+                border: 'none',
+                color: 'white',
+                borderRadius: '50%',
+                width: '28px',
+                height: '28px',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                cursor: 'pointer'
+              }}
+            >
+              <X size={16} />
+            </button>
+          </div>
+
+          <p className="subtitle" style={{ fontSize: '10.5px', lineHeight: '1.4', color: 'var(--text-secondary)' }}>
+            Điểm thưởng (Xu) được tích lũy từ việc chia sẻ các bài viết đóng góp kiến thức chất lượng cho cộng đồng. 1 xu quy đổi tương đương 100 VNĐ.
+          </p>
+
+          {/* Balance card */}
+          <div className="glass-card" style={{ 
+            background: 'rgba(255, 215, 0, 0.04)', 
+            borderColor: 'rgba(255, 215, 0, 0.25)', 
+            padding: '14px', 
+            borderRadius: '16px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '4px',
+            alignItems: 'center'
+          }}>
+            <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Số dư hiện tại</span>
+            <span style={{ fontSize: '24px', fontWeight: 800, color: '#ffd700' }}>{rewardPoints} xu</span>
+            <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--accent-green)', marginTop: '2px' }}>
+              ≈ {(rewardPoints * 100).toLocaleString()} VNĐ
+            </span>
+          </div>
+
+          {/* Withdraw Form */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', flex: 1 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label style={{ fontSize: '10.5px', color: 'var(--text-secondary)', fontWeight: 600 }}>Ngân hàng / Ví:</label>
+              <select 
+                value={bankName}
+                onChange={(e) => setBankName(e.target.value)}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.03)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '10px',
+                  padding: '8px 10px',
+                  color: 'white',
+                  fontSize: '12.5px',
+                  outline: 'none'
+                }}
+              >
+                <option value="" disabled style={{ background: '#12161a' }}>Chọn Ngân hàng hoặc Ví MoMo</option>
+                <option value="Vietcombank" style={{ background: '#12161a' }}>Vietcombank</option>
+                <option value="Techcombank" style={{ background: '#12161a' }}>Techcombank</option>
+                <option value="MB Bank" style={{ background: '#12161a' }}>MB Bank</option>
+                <option value="Ví MoMo" style={{ background: '#12161a' }}>Ví MoMo</option>
+              </select>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label style={{ fontSize: '10.5px', color: 'var(--text-secondary)', fontWeight: 600 }}>Số tài khoản / Số điện thoại:</label>
+              <input 
+                type="text" 
+                placeholder="Ví dụ: 0912345678"
+                value={accountNumber}
+                onChange={(e) => setAccountNumber(e.target.value)}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.03)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '10px',
+                  padding: '8px 12px',
+                  color: 'white',
+                  fontSize: '12.5px',
+                  outline: 'none'
+                }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label style={{ fontSize: '10.5px', color: 'var(--text-secondary)', fontWeight: 600 }}>Tên chủ tài khoản (không dấu):</label>
+              <input 
+                type="text" 
+                placeholder="Ví dụ: NGUYEN VAN A"
+                value={accountName}
+                onChange={(e) => setAccountName(e.target.value.toUpperCase())}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.03)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '10px',
+                  padding: '8px 12px',
+                  color: 'white',
+                  fontSize: '12.5px',
+                  outline: 'none'
+                }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label style={{ fontSize: '10.5px', color: 'var(--text-secondary)', fontWeight: 600 }}>Số xu muốn rút (tối thiểu 50 xu):</label>
+              <input 
+                type="number" 
+                placeholder={`Nhập số xu (tối đa ${rewardPoints})`}
+                value={withdrawCoins}
+                onChange={(e) => setWithdrawCoins(e.target.value)}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.03)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '10px',
+                  padding: '8px 12px',
+                  color: 'white',
+                  fontSize: '12.5px',
+                  outline: 'none'
+                }}
+              />
+              {withdrawCoins && (
+                <span style={{ fontSize: '11px', color: 'var(--accent-orange)', fontWeight: 600, marginTop: '2px' }}>
+                  Bạn sẽ nhận được: {(Number(withdrawCoins) * 100).toLocaleString()} VNĐ
+                </span>
+              )}
+            </div>
+
+            <button 
+              type="button"
+              disabled={!bankName || !accountNumber || !accountName || !withdrawCoins || Number(withdrawCoins) < 50 || Number(withdrawCoins) > rewardPoints}
+              onClick={() => {
+                const coinsToDeduct = Number(withdrawCoins);
+                setRewardPoints(prev => prev - coinsToDeduct);
+                if (showToast) {
+                  showToast(`Yêu cầu rút ${(coinsToDeduct * 100).toLocaleString()} VNĐ thành công! Tiền sẽ được chuyển trong 24h.`, 'success');
+                }
+                setShowWithdrawModal(false);
+                setBankName('');
+                setAccountNumber('');
+                setAccountName('');
+                setWithdrawCoins('');
+              }}
+              className="btn-primary"
+              style={{
+                width: '100%',
+                padding: '12px',
+                borderRadius: '12px',
+                fontWeight: 700,
+                fontSize: '13px',
+                marginTop: '12px',
+                background: '#ffd700',
+                color: '#12151c',
+                cursor: 'pointer',
+                opacity: (!bankName || !accountNumber || !accountName || !withdrawCoins || Number(withdrawCoins) < 50 || Number(withdrawCoins) > rewardPoints) ? 0.5 : 1
+              }}
+            >
+              Yêu cầu quy đổi
+            </button>
           </div>
         </div>
       )}

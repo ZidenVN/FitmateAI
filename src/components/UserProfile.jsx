@@ -537,6 +537,59 @@ export default function UserProfile({ profile, onClose, posts, onUpdateProfile, 
                 <span style={{ fontWeight: 600 }}>{profile.gender || 'Chưa cập nhật'}</span>
               </div>
             </div>
+
+            {/* User Posts Card */}
+            {userPosts && userPosts.length > 0 && (
+              <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px', fontSize: '12.5px' }}>
+                <h4 style={{ fontSize: '13px', fontWeight: 700, borderBottom: '1px solid var(--border-color)', paddingBottom: '6px', marginBottom: '4px' }}>
+                  Bài viết cộng đồng ({userPosts.length})
+                </h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '200px', overflowY: 'auto', paddingRight: '2px' }}>
+                  {userPosts.map(post => {
+                    const totalReacts = (post.reactions.love || 0) + (post.reactions.fire || 0) + (post.reactions.haha || 0);
+                    return (
+                      <div key={post.id} style={{ 
+                        padding: '8px 10px', 
+                        background: 'rgba(255,255,255,0.01)', 
+                        border: '1px solid var(--border-color)', 
+                        borderRadius: '10px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '6px'
+                      }}>
+                        <div style={{ fontSize: '12.5px', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'left' }}>
+                          {post.content}
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '10px', color: 'var(--text-secondary)' }}>
+                          <span>❤️ {totalReacts} tương tác</span>
+                          
+                          {/* Badges */}
+                          <div style={{ display: 'flex', gap: '4px' }}>
+                            {post.isKnowledge && !post.isQuality && (
+                              <span style={{ color: '#2f80ed', background: 'rgba(47, 128, 237, 0.1)', padding: '1px 4px', borderRadius: '4px', fontSize: '9px', fontWeight: 700 }}>
+                                ⏳ Đang duyệt
+                              </span>
+                            )}
+                            {post.isQuality && (
+                              <span style={{ color: '#ffd700', background: 'rgba(255, 215, 0, 0.1)', padding: '1px 4px', borderRadius: '4px', fontSize: '9px', fontWeight: 700 }}>
+                                📚 Kiến thức chất lượng
+                              </span>
+                            )}
+                            
+                            {/* Coin Reward Info: ONLY show when profile.isSelf is true */}
+                            {profile.isSelf && post.isKnowledge && (
+                              <span style={{ color: 'var(--accent-green)', background: 'rgba(57, 255, 20, 0.1)', padding: '1px 4px', borderRadius: '4px', fontSize: '9px', fontWeight: 700 }}>
+                                +{post.isQuality ? (post.pointsAwarded || Math.floor(totalReacts / 5)) : 0} xu
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </>
         )}
       </div>

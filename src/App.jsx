@@ -33,6 +33,7 @@ const DEFAULT_USERS = {
       trainingTime: '18:00'
     },
     streak: 7,
+    rewardPoints: 250,
     caloriesConsumed: 1250,
     caloriesBurned: 0,
     workoutSummary: null,
@@ -82,6 +83,7 @@ const DEFAULT_USERS = {
       trainingTime: '08:00'
     },
     streak: 15,
+    rewardPoints: 500,
     caloriesConsumed: 1800,
     caloriesBurned: 350,
     workoutSummary: null,
@@ -152,6 +154,16 @@ export default function App() {
       return db[currentUser].streak !== undefined ? db[currentUser].streak : 7;
     }
     return 7;
+  });
+
+  const [rewardPoints, setRewardPoints] = useState(() => {
+    const savedDb = localStorage.getItem('fitmate_users');
+    const db = savedDb ? JSON.parse(savedDb) : DEFAULT_USERS;
+    const currentUser = localStorage.getItem('fitmate_current_user') || '';
+    if (currentUser && db[currentUser]) {
+      return db[currentUser].rewardPoints !== undefined ? db[currentUser].rewardPoints : 250;
+    }
+    return 250;
   });
 
   const [currentTime, setCurrentTime] = useState('09:41');
@@ -285,6 +297,7 @@ export default function App() {
     if (user) {
       setMyProfile(user.profile);
       setStreak(user.streak !== undefined ? user.streak : 7);
+      setRewardPoints(user.rewardPoints !== undefined ? user.rewardPoints : 250);
       setCaloriesConsumed(user.caloriesConsumed !== undefined ? user.caloriesConsumed : 1250);
       setCaloriesBurned(user.caloriesBurned !== undefined ? user.caloriesBurned : 0);
       setWorkoutSummary(user.workoutSummary !== undefined ? user.workoutSummary : null);
@@ -313,6 +326,7 @@ export default function App() {
       password: userData.password || '123456',
       profile: newProfile,
       streak: 0,
+      rewardPoints: 100,
       caloriesConsumed: 0,
       caloriesBurned: 0,
       workoutSummary: null,
@@ -347,6 +361,7 @@ export default function App() {
             ...prev[currentUserEmail],
             profile: myProfile,
             streak,
+            rewardPoints,
             caloriesConsumed,
             caloriesBurned,
             workoutSummary,
@@ -358,7 +373,7 @@ export default function App() {
         return updated;
       });
     }
-  }, [myProfile, streak, caloriesConsumed, caloriesBurned, workoutSummary, appointments, aiChats, currentUserEmail, isAuthenticated]);
+  }, [myProfile, streak, rewardPoints, caloriesConsumed, caloriesBurned, workoutSummary, appointments, aiChats, currentUserEmail, isAuthenticated]);
 
   // Load session on mount if already logged in
   useEffect(() => {
@@ -366,6 +381,70 @@ export default function App() {
       loadUserSession(currentUserEmail);
     }
   }, []);
+
+  // Simulation of background reactions on user's registered knowledge posts
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    
+    const interval = setInterval(() => {
+      setPosts(prevPosts => {
+        let updated = false;
+        const newPosts = prevPosts.map(post => {
+          if (post.author === 'Hùng (Bạn)' && post.isKnowledge) {
+            const total = (post.reactions.love || 0) + (post.reactions.fire || 0) + (post.reactions.haha || 0);
+            // Limit simulation to a maximum of 75 reactions
+            if (total < 75) {
+              const types = ['love', 'fire', 'haha'];
+              const randomType = types[Math.floor(Math.random() * types.length)];
+              const newReactions = { ...post.reactions };
+              newReactions[randomType] = (newReactions[randomType] || 0) + 1;
+              
+              const newTotal = total + 1;
+              let isQuality = post.isQuality || false;
+              let pointsAwarded = post.pointsAwarded || 0;
+              let bonusPoints = 0;
+              
+              if (newTotal >= 50) {
+                if (!isQuality) {
+                  isQuality = true;
+                  pointsAwarded = 10;
+                  bonusPoints = 10;
+                  setTimeout(() => {
+                    showToast("Bài viết kiến thức của bạn đạt 50 tương tác! Đạt chứng nhận Chất lượng (+10 xu) 📚🪙", "success");
+                  }, 100);
+                } else {
+                  const expected = 10 + Math.floor((newTotal - 50) / 5);
+                  if (expected > pointsAwarded) {
+                    bonusPoints = expected - pointsAwarded;
+                    pointsAwarded = expected;
+                    setTimeout(() => {
+                      showToast(`Bài viết chất lượng đạt ${newTotal} tương tác! Nhận thêm +${bonusPoints} xu! 🪙`, "success");
+                    }, 100);
+                  }
+                }
+              }
+              
+              if (bonusPoints > 0) {
+                setRewardPoints(p => p + bonusPoints);
+              }
+              
+              updated = true;
+              return {
+                ...post,
+                reactions: newReactions,
+                isQuality,
+                pointsAwarded
+              };
+            }
+          }
+          return post;
+        });
+        return updated ? newPosts : prevPosts;
+      });
+    }, 4000);
+    
+    return () => clearInterval(interval);
+  }, [isAuthenticated]);
 
   // Social Feed State
   const [posts, setPosts] = useState([
@@ -437,8 +516,11 @@ export default function App() {
       avatar: 'https://images.unsplash.com/photo-1548690312-e3b507d8c110?w=150&auto=format&fit=crop&q=60',
       content: 'Chia sẻ một mẹo nhỏ cho các bạn tập Calisthenics mới bắt đầu: Luôn giữ cốt lõi (core) thật chặt khi thực hiện Plank hoặc Push-ups nhé! 🤸‍♂️',
       image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&auto=format&fit=crop&q=60',
-      reactions: { love: 15, fire: 10, haha: 0 },
+      reactions: { love: 35, fire: 20, haha: 2 },
       userReacted: { love: false, fire: false, haha: false },
+      isKnowledge: true,
+      isQuality: true,
+      pointsAwarded: 11,
       comments: [
         {
           id: 1,
@@ -457,8 +539,11 @@ export default function App() {
       avatar: 'https://images.unsplash.com/photo-1567013127542-490d757e51fc?w=150&auto=format&fit=crop&q=60',
       content: 'Dinh dưỡng chiếm 70% sự thành bại. Bổ sung đủ protein chất lượng cao sau tập để cơ bắp phát triển tốt nhất nhé! 🍗🥚',
       image: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=400&auto=format&fit=crop&q=60',
-      reactions: { love: 9, fire: 5, haha: 0 },
+      reactions: { love: 28, fire: 25, haha: 3 },
       userReacted: { love: false, fire: false, haha: false },
+      isKnowledge: true,
+      isQuality: true,
+      pointsAwarded: 11,
       comments: [
         {
           id: 1,
@@ -565,6 +650,8 @@ export default function App() {
           <Dashboard 
             streak={streak} 
             setStreak={setStreak}
+            rewardPoints={rewardPoints}
+            setRewardPoints={setRewardPoints}
             caloriesConsumed={caloriesConsumed} 
             caloriesBurned={caloriesBurned}
             workoutSummary={workoutSummary}
@@ -604,6 +691,9 @@ export default function App() {
             setPosts={setPosts}
             onCompleteTask={() => {}} // placeholder
             onOpenProfile={handleOpenProfile}
+            rewardPoints={rewardPoints}
+            setRewardPoints={setRewardPoints}
+            showToast={showToast}
           />
         );
       case 'messenger':
@@ -649,6 +739,8 @@ export default function App() {
           <Dashboard 
             streak={streak} 
             setStreak={setStreak} 
+            rewardPoints={rewardPoints}
+            setRewardPoints={setRewardPoints}
             caloriesConsumed={caloriesConsumed} 
             caloriesBurned={caloriesBurned} 
             workoutSummary={workoutSummary} 

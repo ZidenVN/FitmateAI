@@ -9,7 +9,10 @@ export default function CompanionAndSocial({
   posts, 
   setPosts, 
   onCompleteTask, 
-  onOpenProfile 
+  onOpenProfile,
+  rewardPoints,
+  setRewardPoints,
+  showToast
 }) {
   const [activeSubTab, setActiveSubTab] = useState('companion'); // 'companion' or 'social'
   const [inputText, setInputText] = useState('');
@@ -24,6 +27,7 @@ export default function CompanionAndSocial({
   const [selectedFileUrl, setSelectedFileUrl] = useState('');
   const [activePostId, setActivePostId] = useState(null); // ID of post in detailed comment view
   const [commentText, setCommentText] = useState('');
+  const [isQualityPost, setIsQualityPost] = useState(false);
   const fileInputRef = useRef(null);
 
   // Get active chat from parent prop
@@ -127,6 +131,13 @@ export default function CompanionAndSocial({
     e.preventDefault();
     if (!newPostText.trim() && !selectedFileUrl) return;
 
+    if (isQualityPost && newPostText.trim().length < 15) {
+      if (showToast) {
+        showToast('Nội dung quá ngắn. Vui lòng viết trên 15 ký tự để nhận Điểm thưởng! ⚠️', 'orange');
+      }
+      return;
+    }
+
     const newPost = {
       id: Date.now(),
       author: 'Hùng (Bạn)',
@@ -137,8 +148,18 @@ export default function CompanionAndSocial({
       image: selectedFileUrl || null,
       reactions: { love: 0, fire: 0, haha: 0 },
       userReacted: { love: false, fire: false, haha: false },
+      isKnowledge: isQualityPost,
+      isQuality: false,
+      pointsAwarded: 0,
       comments: []
     };
+
+    if (isQualityPost) {
+      if (showToast) {
+        showToast('Đăng ký bài viết kiến thức thành công! Đang đợi cộng đồng kiểm duyệt qua tương tác... ⏳', 'success');
+      }
+      setIsQualityPost(false);
+    }
 
     setPosts([newPost, ...posts]);
     setNewPostText('');
@@ -264,6 +285,50 @@ export default function CompanionAndSocial({
                   <div style={{ fontSize: '9px', color: 'var(--text-secondary)' }}>{activePost.role} • {activePost.time}</div>
                 </div>
               </div>
+
+              {/* Quality Knowledge Badge & Moderation Badge */}
+              {activePost.isKnowledge && !activePost.isQuality && (() => {
+                const total = (activePost.reactions.love || 0) + (activePost.reactions.fire || 0) + (activePost.reactions.haha || 0);
+                return (
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    background: 'rgba(47, 128, 237, 0.08)',
+                    border: '1px solid rgba(47, 128, 237, 0.3)',
+                    borderRadius: '8px',
+                    padding: '4px 8px',
+                    alignSelf: 'flex-start',
+                    marginTop: '2px',
+                    boxShadow: '0 0 8px rgba(47, 128, 237, 0.05)'
+                  }}>
+                    <span style={{ fontSize: '10px' }}>⏳</span>
+                    <span style={{ fontSize: '9.5px', fontWeight: 800, color: '#2f80ed', letterSpacing: '0.3px' }}>
+                      ĐANG KIỂM DUYỆT KIẾN THỨC ({total}/50 tương tác)
+                    </span>
+                  </div>
+                );
+              })()}
+
+              {activePost.isQuality && (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  background: 'rgba(255, 215, 0, 0.08)',
+                  border: '1px solid rgba(255, 215, 0, 0.3)',
+                  borderRadius: '8px',
+                  padding: '4px 8px',
+                  alignSelf: 'flex-start',
+                  marginTop: '2px',
+                  boxShadow: '0 0 8px rgba(255, 215, 0, 0.05)'
+                }}>
+                  <span style={{ fontSize: '10px' }}>📚</span>
+                  <span style={{ fontSize: '9.5px', fontWeight: 800, color: '#ffd700', letterSpacing: '0.3px' }}>
+                    KIẾN THỨC CHẤT LƯỢNG
+                  </span>
+                </div>
+              )}
 
               {/* Body */}
               <p style={{ fontSize: '13px', color: 'var(--text-primary)', lineHeight: '1.4' }}>
@@ -931,6 +996,57 @@ export default function CompanionAndSocial({
                   </div>
                 )}
 
+                {/* Toggle switch for quality post */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  background: isQualityPost ? 'rgba(255, 215, 0, 0.04)' : 'rgba(255, 255, 255, 0.01)',
+                  border: isQualityPost ? '1px solid rgba(255, 215, 0, 0.25)' : '1px solid var(--border-color)',
+                  borderRadius: '12px',
+                  padding: '8px 12px',
+                  marginTop: '4px',
+                  transition: 'all 0.25s ease'
+                }}>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <span style={{ fontSize: '15px' }}>📚</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
+                      <span style={{ fontSize: '11px', fontWeight: 700, color: isQualityPost ? '#ffd700' : 'var(--text-primary)' }}>
+                        Đăng ký bài viết kiến thức
+                      </span>
+                      <span style={{ fontSize: '9px', color: 'var(--text-secondary)' }}>
+                        Nhận xu dựa trên lượt tương tác (5 tương tác = 1 xu) sau khi đạt 50 tương tác.
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {/* Custom Toggle Switch */}
+                  <div 
+                    onClick={() => setIsQualityPost(!isQualityPost)}
+                    style={{
+                      width: '36px',
+                      height: '20px',
+                      borderRadius: '10px',
+                      background: isQualityPost ? 'var(--accent-green)' : 'rgba(255,255,255,0.1)',
+                      position: 'relative',
+                      cursor: 'pointer',
+                      transition: 'background 0.25s ease',
+                      flexShrink: 0
+                    }}
+                  >
+                    <div style={{
+                      width: '16px',
+                      height: '16px',
+                      borderRadius: '50%',
+                      background: isQualityPost ? '#12151c' : 'white',
+                      position: 'absolute',
+                      top: '2px',
+                      left: isQualityPost ? '18px' : '2px',
+                      transition: 'left 0.25s ease'
+                    }} />
+                  </div>
+                </div>
+
                 {/* Bottom Actions of post creator */}
                 <div style={{ 
                   display: 'flex', 
@@ -1017,6 +1133,50 @@ export default function CompanionAndSocial({
                         <div style={{ fontSize: '9px', color: 'var(--text-secondary)' }}>{post.role} • {post.time}</div>
                       </div>
                     </div>
+
+                    {/* Quality Knowledge Badge & Moderation Badge */}
+                    {post.isKnowledge && !post.isQuality && (() => {
+                      const total = (post.reactions.love || 0) + (post.reactions.fire || 0) + (post.reactions.haha || 0);
+                      return (
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '5px',
+                          background: 'rgba(47, 128, 237, 0.08)',
+                          border: '1px solid rgba(47, 128, 237, 0.3)',
+                          borderRadius: '8px',
+                          padding: '4px 8px',
+                          alignSelf: 'flex-start',
+                          marginTop: '2px',
+                          boxShadow: '0 0 8px rgba(47, 128, 237, 0.05)'
+                        }}>
+                          <span style={{ fontSize: '10px' }}>⏳</span>
+                          <span style={{ fontSize: '9.5px', fontWeight: 800, color: '#2f80ed', letterSpacing: '0.3px' }}>
+                            ĐANG KIỂM DUYỆT KIẾN THỨC ({total}/50 tương tác)
+                          </span>
+                        </div>
+                      );
+                    })()}
+
+                    {post.isQuality && (
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '5px',
+                        background: 'rgba(255, 215, 0, 0.08)',
+                        border: '1px solid rgba(255, 215, 0, 0.3)',
+                        borderRadius: '8px',
+                        padding: '4px 8px',
+                        alignSelf: 'flex-start',
+                        marginTop: '2px',
+                        boxShadow: '0 0 8px rgba(255, 215, 0, 0.05)'
+                      }}>
+                        <span style={{ fontSize: '10px' }}>📚</span>
+                        <span style={{ fontSize: '9.5px', fontWeight: 800, color: '#ffd700', letterSpacing: '0.3px' }}>
+                          KIẾN THỨC CHẤT LƯỢNG
+                        </span>
+                      </div>
+                    )}
 
                     {/* Content */}
                     <p style={{ fontSize: '13px', color: 'var(--text-primary)', lineHeight: '1.4' }}>
