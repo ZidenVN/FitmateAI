@@ -30,7 +30,8 @@ const DEFAULT_USERS = {
       medicalCondition: 'Không có',
       allergies: 'Không có',
       trainingDays: ['Thứ 2', 'Thứ 4', 'Thứ 6'],
-      trainingTime: '18:00'
+      trainingTime: '18:00',
+      trainingTimes: ['18:00']
     },
     streak: 7,
     rewardPoints: 250,
@@ -77,10 +78,12 @@ const DEFAULT_USERS = {
       spec: ['Calisthenics', 'Giảm cân nhanh', 'Sức bền'],
       exp: '3 năm kinh nghiệm',
       price: '300.000đ/buổi',
+      isVerified: true,
       medicalCondition: 'Không có',
       allergies: 'Không có',
       trainingDays: ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'],
-      trainingTime: '08:00'
+      trainingTime: '08:00',
+      trainingTimes: ['08:00']
     },
     streak: 15,
     rewardPoints: 500,
@@ -167,6 +170,8 @@ export default function App() {
   });
 
   const [currentTime, setCurrentTime] = useState('09:41');
+  const [dietState, setDietState] = useState('normal'); // 'normal', 'skipped_breakfast', 'overeating'
+  const [workoutState, setWorkoutState] = useState('normal'); // 'normal', 'skipped', 'completed'
   const [selectedProfile, setSelectedProfile] = useState(null);
   const [justCompletedWorkout, setJustCompletedWorkout] = useState(false);
   const [appToast, setAppToast] = useState(null); // { message: '', type: 'success' | 'orange' }
@@ -249,7 +254,8 @@ export default function App() {
       isSelf: false,
       spec: ['Calisthenics', 'Giảm cân nhanh', 'Sức bền'],
       exp: '3 năm kinh nghiệm',
-      price: '300.000đ/buổi'
+      price: '300.000đ/buổi',
+      isVerified: true
     },
     'Nguyễn Minh Khang': {
       name: 'Nguyễn Minh Khang',
@@ -265,7 +271,8 @@ export default function App() {
       isSelf: false,
       spec: ['Tăng cơ', 'Dinh dưỡng chuyên sâu', 'Powerlifting'],
       exp: '1.5 năm kinh nghiệm',
-      price: '250.000đ/buổi'
+      price: '250.000đ/buổi',
+      isVerified: true
     }
   };
 
@@ -311,14 +318,17 @@ export default function App() {
 
   // Registration Helper to add new account to database
   const handleRegisterSuccess = (userData) => {
+    const isPt = userData.isPt || false;
     const newProfile = {
       ...userData,
-      bio: userData.goal,
+      bio: isPt ? `HLV chuyên nghiệp. Chuyên môn: ${userData.spec?.join(', ') || ''}. ${userData.exp || ''}.` : userData.goal,
       name: userData.name + ' (Bạn)',
-      role: 'Hội viên',
-      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=60',
-      isPt: false,
-      isSelf: true
+      role: isPt ? 'Huấn luyện viên' : 'Hội viên',
+      avatar: isPt ? 'https://images.unsplash.com/photo-1548690312-e3b507d8c110?w=150&auto=format&fit=crop&q=60' : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=60',
+      isPt: isPt,
+      isSelf: true,
+      isVerified: isPt ? false : undefined,
+      verificationStatus: isPt ? 'Chờ duyệt chứng chỉ' : undefined
     };
 
     const newUser = {
@@ -326,16 +336,16 @@ export default function App() {
       password: userData.password || '123456',
       profile: newProfile,
       streak: 0,
-      rewardPoints: 100,
-      caloriesConsumed: 0,
-      caloriesBurned: 0,
+      rewardPoints: isPt ? 500 : 100,
+      caloriesConsumed: isPt ? 1800 : 0,
+      caloriesBurned: isPt ? 0 : 0,
       workoutSummary: null,
       appointments: [],
       aiChats: [
         {
           id: 1,
-          title: "Tư vấn dinh dưỡng 🍳",
-          messages: [{ id: 1, text: `Chào ${userData.name}! Mình có thể giúp gì về thực đơn dinh dưỡng hôm nay?`, sender: 'buddy' }]
+          title: isPt ? "Trợ lý HLV 🤸‍♂️" : "Tư vấn dinh dưỡng 🍳",
+          messages: [{ id: 1, text: isPt ? `Chào HLV ${userData.name}! Tớ có thể hỗ trợ gì về giáo án hôm nay?` : `Chào ${userData.name}! Mình có thể giúp gì về thực đơn dinh dưỡng hôm nay?`, sender: 'buddy' }]
         }
       ]
     };
@@ -621,6 +631,7 @@ export default function App() {
     setCaloriesBurned(summary.calories);
     setWorkoutSummary(summary);
     setJustCompletedWorkout(true);
+    setWorkoutState('completed');
 
     // Streak logic: at least 2 exercises completed
     if (summary.exercises && summary.exercises.length >= 2) {
@@ -662,6 +673,11 @@ export default function App() {
             showToast={showToast}
             myProfile={myProfile}
             onLogout={handleLogout}
+            dietState={dietState}
+            setDietState={setDietState}
+            workoutState={workoutState}
+            setWorkoutState={setWorkoutState}
+            onUpdateProfile={handleUpdateMyProfile}
           />
         );
       case 'nutrition':
@@ -669,6 +685,12 @@ export default function App() {
           <NutritionVision 
             onAddCalories={handleAddCalories}
             onCompleteTask={() => {}} // placeholder
+            dietState={dietState}
+            setDietState={setDietState}
+            workoutState={workoutState}
+            myProfile={myProfile}
+            onUpdateProfile={handleUpdateMyProfile}
+            showToast={showToast}
           />
         );
       case 'workout':
@@ -678,6 +700,12 @@ export default function App() {
             onWorkoutComplete={handleWorkoutComplete}
             isWorkoutCompleted={!!workoutSummary}
             setScreen={handleTabSwitch}
+            workoutState={workoutState}
+            setWorkoutState={setWorkoutState}
+            dietState={dietState}
+            myProfile={myProfile}
+            onUpdateProfile={handleUpdateMyProfile}
+            showToast={showToast}
           />
         );
       case 'social':

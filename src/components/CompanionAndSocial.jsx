@@ -22,6 +22,30 @@ export default function CompanionAndSocial({
   const [editingTitleText, setEditingTitleText] = useState('');
   const chatEndRef = useRef(null);
 
+  const isPtAuthor = (authorName, authorRole) => {
+    if (!authorName) return false;
+    const lowerName = authorName.toLowerCase();
+    const lowerRole = authorRole ? authorRole.toLowerCase() : '';
+    return lowerRole.includes('huấn luyện viên') || 
+           lowerName.includes('tú') || 
+           lowerName.includes('khang') || 
+           lowerName.includes('hlv');
+  };
+
+  const cleanContent = (text) => {
+    if (typeof text !== 'string') return text;
+    const toxicKeywords = ['toxic', 'chửi', 'ngu ngốc', 'vô học', 'chửi thề', 'mất dạy', 'đồ ngu', 'ngu thế', 'đần'];
+    const lower = text.toLowerCase();
+    if (toxicKeywords.some(kw => lower.includes(kw))) {
+      return (
+        <span style={{ color: 'var(--accent-orange)', fontStyle: 'italic', fontSize: '11.5px', fontWeight: 500 }}>
+          ⚠️ [Bình luận đã bị ẩn tự động do vi phạm quy tắc văn minh cộng đồng]
+        </span>
+      );
+    }
+    return text;
+  };
+
   // Mini Social Network States
   const [newPostText, setNewPostText] = useState('');
   const [selectedFileUrl, setSelectedFileUrl] = useState('');
@@ -271,7 +295,7 @@ export default function CompanionAndSocial({
                   name: activePost.author,
                   role: activePost.role,
                   avatar: activePost.avatar,
-                  isPt: activePost.role.includes('Huấn luyện viên'),
+                  isPt: isPtAuthor(activePost.author, activePost.role),
                   isSelf: activePost.author.includes('Bạn')
                 })}
               >
@@ -281,7 +305,27 @@ export default function CompanionAndSocial({
                   style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover' }}
                 />
                 <div>
-                  <div style={{ fontSize: '13px', fontWeight: 700 }}>{activePost.author}</div>
+                  <div style={{ fontSize: '13px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    {activePost.author}
+                    {isPtAuthor(activePost.author, activePost.role) && (
+                      <span 
+                        title="HLV đã xác thực chuyên môn" 
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          background: '#2f80ed',
+                          borderRadius: '50%',
+                          width: '12px',
+                          height: '12px',
+                          color: 'white',
+                          padding: '1.5px'
+                        }}
+                      >
+                        <Check size={8} strokeWidth={4} />
+                      </span>
+                    )}
+                  </div>
                   <div style={{ fontSize: '9px', color: 'var(--text-secondary)' }}>{activePost.role} • {activePost.time}</div>
                 </div>
               </div>
@@ -332,7 +376,7 @@ export default function CompanionAndSocial({
 
               {/* Body */}
               <p style={{ fontSize: '13px', color: 'var(--text-primary)', lineHeight: '1.4' }}>
-                {activePost.content}
+                {cleanContent(activePost.content)}
               </p>
 
               {/* Image if any */}
@@ -436,11 +480,31 @@ export default function CompanionAndSocial({
                       />
                       <div style={{ flex: 1 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span style={{ fontSize: '11px', fontWeight: 700 }}>{comment.author}</span>
+                          <span style={{ fontSize: '11px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            {comment.author}
+                            {isPtAuthor(comment.author, '') && (
+                              <span 
+                                title="HLV đã xác thực chuyên môn" 
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  background: '#2f80ed',
+                                  borderRadius: '50%',
+                                  width: '11px',
+                                  height: '11px',
+                                  color: 'white',
+                                  padding: '1px'
+                                }}
+                              >
+                                <Check size={7} strokeWidth={4} />
+                              </span>
+                            )}
+                          </span>
                           <span style={{ fontSize: '8px', color: 'var(--text-secondary)' }}>{comment.time}</span>
                         </div>
                         <p style={{ fontSize: '11.5px', color: 'var(--text-primary)', marginTop: '3px', lineHeight: '1.3' }}>
-                          {comment.content}
+                          {cleanContent(comment.content)}
                         </p>
                       </div>
                     </div>
@@ -914,6 +978,26 @@ export default function CompanionAndSocial({
           ) : (
             /* Mạng Xã Hội Mini View */
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', height: '520px', overflowY: 'auto' }}>
+              {/* Community Civil Code Rules Banner */}
+              <div className="glass-card" style={{ 
+                background: 'linear-gradient(135deg, rgba(47, 128, 237, 0.05) 0%, rgba(0, 0, 0, 0) 100%)',
+                borderColor: 'rgba(47, 128, 237, 0.2)',
+                padding: '12px 14px',
+                borderRadius: '16px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '4px'
+              }}>
+                <h5 style={{ fontSize: '12.5px', fontWeight: 700, color: '#2f80ed', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
+                  📜 Quy Tắc Ứng Xử Cộng Đồng & Nhận Thưởng
+                </h5>
+                <p style={{ fontSize: '10px', color: 'var(--text-secondary)', lineHeight: '1.4', margin: 0 }}>
+                  • Hãy luôn thảo luận văn hóa, lịch sự và tôn trọng lẫn nhau.
+                  <br />• Các bình luận/bài viết thô tục, công kích sẽ <strong>bị AI tự động ẩn</strong>.
+                  <br />• Đăng ký <strong>kiến thức chất lượng</strong> để nhận tới <strong>+10 xu</strong> khi đạt 50 tương tác từ cộng đồng!
+                </p>
+              </div>
+
               {/* Post Creation Box */}
               <form onSubmit={handleCreatePost} className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
@@ -1113,7 +1197,7 @@ export default function CompanionAndSocial({
                         name: post.author,
                         role: post.role,
                         avatar: post.avatar,
-                        isPt: post.role.includes('Huấn luyện viên') || post.author.includes('Tú') || post.author.includes('Khang'),
+                        isPt: isPtAuthor(post.author, post.role),
                         isSelf: post.author.includes('Bạn')
                       })}
                     >
@@ -1129,7 +1213,27 @@ export default function CompanionAndSocial({
                         }}
                       />
                       <div>
-                        <div style={{ fontSize: '13px', fontWeight: 700 }}>{post.author}</div>
+                        <div style={{ fontSize: '13px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          {post.author}
+                          {isPtAuthor(post.author, post.role) && (
+                            <span 
+                              title="HLV đã xác thực chuyên môn" 
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                background: '#2f80ed',
+                                borderRadius: '50%',
+                                width: '12px',
+                                height: '12px',
+                                color: 'white',
+                                padding: '1.5px'
+                              }}
+                            >
+                              <Check size={8} strokeWidth={4} />
+                            </span>
+                          )}
+                        </div>
                         <div style={{ fontSize: '9px', color: 'var(--text-secondary)' }}>{post.role} • {post.time}</div>
                       </div>
                     </div>
@@ -1180,7 +1284,7 @@ export default function CompanionAndSocial({
 
                     {/* Content */}
                     <p style={{ fontSize: '13px', color: 'var(--text-primary)', lineHeight: '1.4' }}>
-                      {post.content}
+                      {cleanContent(post.content)}
                     </p>
 
                     {/* Attached Post Image */}

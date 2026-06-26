@@ -2,6 +2,18 @@ import React, { useState } from 'react';
 import { ArrowLeft, MessageCircle, UserPlus, Star, Award, Heart, Flame, Smile, Check, X } from 'lucide-react';
 
 export default function UserProfile({ profile, onClose, posts, onUpdateProfile, showToast, appointments, setAppointments, myProfile }) {
+  const mockReviews = {
+    'Mai Xuân Tú': [
+      { id: 1, student: 'Nguyễn Đào Tùng Lâm', rating: 5, comment: 'HLV chuyên môn cực tốt, hướng dẫn kỹ thuật Calisthenics rất bài bản, nhiệt tình.', date: '3 ngày trước' },
+      { id: 2, student: 'Nguyễn Phúc Thịnh', rating: 5, comment: 'Thầy Tú giúp mình lên Planche rất nhanh, giáo án nhẹ nhàng nhưng hiệu quả cao!', date: '1 tuần trước' },
+      { id: 3, student: 'Hoàng Gia Bảo', rating: 4.8, comment: 'Tác phong chuyên nghiệp, luôn nhắc nhở gồng core kĩ. Chấm 5 sao!', date: '2 tuần trước' }
+    ],
+    'Nguyễn Minh Khang': [
+      { id: 1, student: 'Lê Hoàng Long', rating: 5, comment: 'HLV tập tạ cực kì cẩn thận, đỡ tạ rất an toàn. Chế độ dinh dưỡng gợi ý ăn ngon dễ theo.', date: '5 ngày trước' },
+      { id: 2, student: 'Phạm Minh Đức', rating: 4.5, comment: 'Nhờ anh Khang hướng dẫn mà bench press của mình tăng thêm 15kg trong 1 tháng.', date: '2 tuần trước' }
+    ]
+  };
+
   const [isEditing, setIsEditing] = useState(false);
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [bookingDate, setBookingDate] = useState('');
@@ -447,7 +459,27 @@ export default function UserProfile({ profile, onClose, posts, onUpdateProfile, 
             {/* User Stats & Description */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
               <div>
-                <h2 className="title-large" style={{ fontSize: '20px', fontWeight: 800 }}>{profile.name}</h2>
+                <h2 className="title-large" style={{ fontSize: '20px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  {profile.name}
+                  {profile.isVerified && (
+                    <span 
+                      title="HLV đã xác thực chuyên môn" 
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: '#2f80ed',
+                        borderRadius: '50%',
+                        width: '15px',
+                        height: '15px',
+                        color: 'white',
+                        padding: '2.5px'
+                      }}
+                    >
+                      <Check size={10} strokeWidth={4} />
+                    </span>
+                  )}
+                </h2>
                 <p className="subtitle" style={{ color: 'var(--accent-green)', fontWeight: 600 }}>{profile.role}</p>
               </div>
 
@@ -456,26 +488,53 @@ export default function UserProfile({ profile, onClose, posts, onUpdateProfile, 
               </p>
 
               {profile.isPt && (
-                /* PT Specific Info Card */
-                <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px' }}>
-                  <div style={{ display: 'flex', gap: '16px', fontSize: '12px' }}>
-                    <div>
-                      <span style={{ color: 'var(--text-secondary)' }}>Kinh nghiệm:</span>
-                      <span style={{ fontWeight: 700, marginLeft: '4px' }}>{profile.exp}</span>
+                <>
+                  {/* PT Specific Info Card */}
+                  <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px' }}>
+                    <div style={{ display: 'flex', gap: '16px', fontSize: '12px' }}>
+                      <div>
+                        <span style={{ color: 'var(--text-secondary)' }}>Kinh nghiệm:</span>
+                        <span style={{ fontWeight: 700, marginLeft: '4px' }}>{profile.exp}</span>
+                      </div>
+                      <div>
+                        <span style={{ color: 'var(--text-secondary)' }}>Giá thuê:</span>
+                        <span style={{ fontWeight: 700, color: 'var(--accent-green)', marginLeft: '4px' }}>{profile.price}</span>
+                      </div>
                     </div>
-                    <div>
-                      <span style={{ color: 'var(--text-secondary)' }}>Giá thuê:</span>
-                      <span style={{ fontWeight: 700, color: 'var(--accent-green)', marginLeft: '4px' }}>{profile.price}</span>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
+                      {profile.spec?.map((s, idx) => (
+                        <span key={idx} style={{ fontSize: '9px', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-color)', padding: '2px 6px', borderRadius: '6px' }}>
+                          {s}
+                        </span>
+                      ))}
                     </div>
                   </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
-                    {profile.spec?.map((s, idx) => (
-                      <span key={idx} style={{ fontSize: '9px', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-color)', padding: '2px 6px', borderRadius: '6px' }}>
-                        {s}
-                      </span>
-                    ))}
+
+                  {/* Student Reviews Card */}
+                  <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '10px', padding: '12px' }}>
+                    <h4 style={{ fontSize: '13px', fontWeight: 700, borderBottom: '1px solid var(--border-color)', paddingBottom: '6px', margin: 0, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <Star size={14} fill="#ffb300" stroke="none" /> Đánh giá từ học viên ({(mockReviews[profile.name.replace(' (Bạn)', '')] || []).length})
+                    </h4>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '180px', overflowY: 'auto' }}>
+                      {(mockReviews[profile.name.replace(' (Bạn)', '')] || []).length > 0 ? (
+                        (mockReviews[profile.name.replace(' (Bạn)', '')] || []).map((rev) => (
+                          <div key={rev.id} style={{ display: 'flex', flexDirection: 'column', gap: '4px', padding: '6px 8px', background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-color)', borderRadius: '8px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-primary)' }}>{rev.student}</span>
+                              <span style={{ fontSize: '10px', color: '#ffb300', fontWeight: 700 }}>★ {rev.rating}</span>
+                            </div>
+                            <p style={{ fontSize: '11.5px', color: 'var(--text-secondary)', margin: 0, lineHeight: '1.3' }}>{rev.comment}</p>
+                            <span style={{ fontSize: '9px', color: 'var(--text-secondary)', alignSelf: 'flex-end' }}>{rev.date}</span>
+                          </div>
+                        ))
+                      ) : (
+                        <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)', fontStyle: 'italic', textAlign: 'center', padding: '10px 0' }}>
+                          Chưa có lượt đánh giá nào dành cho HLV này.
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
+                </>
               )}
 
               {/* Action Buttons */}
@@ -536,6 +595,43 @@ export default function UserProfile({ profile, onClose, posts, onUpdateProfile, 
                 <span style={{ color: 'var(--text-secondary)' }}>🚻 Giới tính:</span>
                 <span style={{ fontWeight: 600 }}>{profile.gender || 'Chưa cập nhật'}</span>
               </div>
+              {!profile.isPt ? (
+                <>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', flexDirection: 'column', gap: '2px', borderTop: '1px dashed var(--border-color)', paddingTop: '6px', marginTop: '2px' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>🩺 Bệnh nền & Chấn thương:</span>
+                    <span style={{ fontWeight: 600, color: 'var(--accent-orange)' }}>{profile.medicalCondition || 'Không có'}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', flexDirection: 'column', gap: '2px' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>🚫 Dị ứng thức ăn:</span>
+                    <span style={{ fontWeight: 600, color: 'var(--accent-green)' }}>{profile.allergies || 'Không có'}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', flexDirection: 'column', gap: '2px' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>⏰ Khung giờ tập:</span>
+                    <span style={{ fontWeight: 600 }}>
+                      {profile.trainingTimes && profile.trainingTimes.length > 0 
+                        ? profile.trainingTimes.join(', ') 
+                        : (profile.trainingTime || 'Chưa cập nhật')}
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', flexDirection: 'column', gap: '2px', borderTop: '1px dashed var(--border-color)', paddingTop: '6px', marginTop: '2px' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>📜 Chứng chỉ hành nghề PT:</span>
+                    <span style={{ fontWeight: 600, color: '#ffd700' }}>
+                      {profile.certificates || "Bằng HLV Quốc tế NASM-CPT, Đại học Y khoa Phạm Ngọc Thạch"}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', flexDirection: 'column', gap: '2px' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>⏰ Giờ đứng lớp trống:</span>
+                    <span style={{ fontWeight: 600 }}>
+                      {profile.trainingTimes && profile.trainingTimes.length > 0 
+                        ? profile.trainingTimes.join(', ') 
+                        : (profile.trainingTime || '08:00 - 21:00')}
+                    </span>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* User Posts Card */}

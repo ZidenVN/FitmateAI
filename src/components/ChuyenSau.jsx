@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, HeartPulse, ShieldAlert, Clock, Calendar, Check, Edit3, Save } from 'lucide-react';
+import { ArrowLeft, HeartPulse, ShieldAlert, Clock, Calendar, Check, Edit3, Save, Plus, X } from 'lucide-react';
 
 export default function ChuyenSau({ myProfile, onUpdateProfile, onClose, showToast }) {
   const [isEditing, setIsEditing] = useState(false);
@@ -8,7 +8,7 @@ export default function ChuyenSau({ myProfile, onUpdateProfile, onClose, showToa
   const [medicalCondition, setMedicalCondition] = useState(myProfile?.medicalCondition || 'Không có');
   const [allergies, setAllergies] = useState(myProfile?.allergies || 'Không có');
   const [selectedDays, setSelectedDays] = useState(myProfile?.trainingDays || ['Thứ 2', 'Thứ 4', 'Thứ 6']);
-  const [trainingTime, setTrainingTime] = useState(myProfile?.trainingTime || '18:00');
+  const [timeSlots, setTimeSlots] = useState(myProfile?.trainingTimes || [myProfile?.trainingTime || '18:00']);
 
   const handleSave = (e) => {
     e.preventDefault();
@@ -17,7 +17,8 @@ export default function ChuyenSau({ myProfile, onUpdateProfile, onClose, showToa
         medicalCondition: medicalCondition.trim() || 'Không có',
         allergies: allergies.trim() || 'Không có',
         trainingDays: selectedDays.length > 0 ? selectedDays : ['Thứ 2', 'Thứ 4', 'Thứ 6'],
-        trainingTime: trainingTime || '18:00'
+        trainingTime: timeSlots[0] || '18:00',
+        trainingTimes: timeSlots
       });
       if (showToast) {
         showToast('Đã lưu thông tin chuyên sâu thành công!', 'success');
@@ -146,7 +147,9 @@ export default function ChuyenSau({ myProfile, onUpdateProfile, onClose, showToa
               <div style={{ flex: 1 }}>
                 <h5 style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 600 }}>Khung giờ tập hàng ngày</h5>
                 <p style={{ fontSize: '14px', fontWeight: 800, color: 'white', marginTop: '4px' }}>
-                  {myProfile?.trainingTime || '18:00'}
+                  {myProfile?.trainingTimes && myProfile.trainingTimes.length > 0 
+                    ? myProfile.trainingTimes.join(', ') 
+                    : (myProfile?.trainingTime || '18:00')}
                 </p>
               </div>
             </div>
@@ -258,24 +261,77 @@ export default function ChuyenSau({ myProfile, onUpdateProfile, onClose, showToa
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>Giờ tập mong muốn hàng ngày:</label>
-              <input 
-                type="time"
-                value={trainingTime}
-                onChange={(e) => setTrainingTime(e.target.value)}
-                style={{
-                  width: '100%',
-                  background: 'rgba(255, 255, 255, 0.03)',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '10px',
-                  padding: '10px 12px',
-                  color: 'white',
-                  fontSize: '13px',
-                  outline: 'none',
-                  boxSizing: 'border-box',
-                  colorScheme: 'dark'
-                }}
-              />
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <label style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>Khung giờ tập mong muốn hàng ngày:</label>
+                <button
+                  type="button"
+                  onClick={() => setTimeSlots([...timeSlots, '18:00'])}
+                  style={{
+                    background: 'rgba(57, 255, 20, 0.15)',
+                    border: 'none',
+                    color: 'var(--accent-green)',
+                    padding: '2px 8px',
+                    borderRadius: '6px',
+                    fontSize: '10px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '2px'
+                  }}
+                >
+                  <Plus size={10} /> Thêm giờ
+                </button>
+              </div>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {timeSlots.map((ts, idx) => (
+                  <div key={idx} style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                    <div style={{ position: 'relative', flex: 1 }}>
+                      <Clock size={14} color="var(--text-secondary)" style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)' }} />
+                      <input 
+                        type="time"
+                        value={ts}
+                        onChange={(e) => {
+                          const updated = timeSlots.map((time, i) => i === idx ? e.target.value : time);
+                          setTimeSlots(updated);
+                        }}
+                        style={{
+                          width: '100%',
+                          background: 'rgba(255, 255, 255, 0.03)',
+                          border: '1px solid var(--border-color)',
+                          borderRadius: '10px',
+                          padding: '8px 10px 8px 30px',
+                          color: 'white',
+                          fontSize: '13px',
+                          outline: 'none',
+                          boxSizing: 'border-box',
+                          colorScheme: 'dark'
+                        }}
+                      />
+                    </div>
+                    {timeSlots.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => setTimeSlots(timeSlots.filter((_, i) => i !== idx))}
+                        style={{
+                          background: 'rgba(255, 87, 34, 0.15)',
+                          border: 'none',
+                          color: 'var(--accent-orange)',
+                          padding: '8px',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
+                      >
+                        <X size={12} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
 
             <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>

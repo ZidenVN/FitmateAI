@@ -17,13 +17,17 @@ export default function Auth({ onLoginSuccess, onRegisterSuccess, usersDb }) {
   const [gender, setGender] = useState('Nam');
   const [birthday, setBirthday] = useState('');
   const [goal, setGoal] = useState('');
+  
+  // PT registration fields
+  const [role, setRole] = useState('user'); // 'user' or 'pt'
+  const [ptSpec, setPtSpec] = useState('');
+  const [ptExp, setPtExp] = useState('');
+  const [ptPrice, setPtPrice] = useState('');
+  const [ptCerts, setPtCerts] = useState('');
 
   // Onboarding states
   const [onboardingStep, setOnboardingStep] = useState(1);
-  const [medicalCondition, setMedicalCondition] = useState('');
-  const [allergies, setAllergies] = useState('');
   const [selectedDays, setSelectedDays] = useState(['Thứ 2', 'Thứ 4', 'Thứ 6']);
-  const [trainingTime, setTrainingTime] = useState('18:00');
 
   const handleLoginSubmit = (e) => {
     e.preventDefault();
@@ -59,6 +63,52 @@ export default function Auth({ onLoginSuccess, onRegisterSuccess, usersDb }) {
   const handleRegisterSubmit = (e) => {
     e.preventDefault();
     setError('');
+
+    if (role === 'pt') {
+      if (!name || !email || !password || !confirmPassword || !ptSpec || !ptExp || !ptPrice || !ptCerts || !birthday) {
+        setError('Vui lòng điền đầy đủ tất cả các trường cho Huấn luyện viên! ⚠️');
+        return;
+      }
+
+      const db = usersDb || {};
+      if (db[email]) {
+        setError('Email này đã được đăng ký! Vui lòng dùng email khác. ⚠️');
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        setError('Mật khẩu nhập lại không khớp! ⚠️');
+        return;
+      }
+
+      if (password.length < 6) {
+        setError('Mật khẩu phải chứa ít nhất 6 ký tự! ⚠️');
+        return;
+      }
+
+      const formattedBirthday = birthday.includes('-') 
+        ? birthday.split('-').reverse().join('/') 
+        : birthday;
+
+      onRegisterSuccess({
+        name,
+        email,
+        password,
+        phone: '09' + Math.floor(10000000 + Math.random() * 90000000),
+        birthday: formattedBirthday,
+        gender,
+        isPt: true,
+        spec: ptSpec.split(',').map(s => s.trim()),
+        exp: ptExp.includes('kinh nghiệm') ? ptExp : `${ptExp} năm kinh nghiệm`,
+        price: ptPrice.includes('đ/buổi') ? ptPrice : `${ptPrice}đ/buổi`,
+        certificates: ptCerts,
+        medicalCondition: 'Không có',
+        allergies: 'Không có',
+        trainingDays: ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'],
+        trainingTimes: ['08:00']
+      });
+      return;
+    }
 
     if (!name || !email || !password || !confirmPassword || !height || !weight || !goal || !birthday) {
       setError('Vui lòng điền đầy đủ tất cả các trường! ⚠️');
@@ -102,10 +152,10 @@ export default function Auth({ onLoginSuccess, onRegisterSuccess, usersDb }) {
       height: height.includes('cm') ? height : `${height} cm`,
       weight: weight.includes('kg') ? weight : `${weight} kg`,
       goal,
-      medicalCondition: medicalCondition.trim() || 'Không có',
-      allergies: allergies.trim() || 'Không có',
+      medicalCondition: 'Không có',
+      allergies: 'Không có',
       trainingDays: selectedDays.length > 0 ? selectedDays : ['Thứ 2', 'Thứ 4', 'Thứ 6'],
-      trainingTime: trainingTime || '18:00'
+      trainingTimes: ['18:00']
     });
   };
 
@@ -355,6 +405,46 @@ export default function Auth({ onLoginSuccess, onRegisterSuccess, usersDb }) {
       ) : onboardingStep === 1 ? (
         /* Register Form */
         <form onSubmit={handleRegisterSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          {/* Role selection */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <label style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>Bạn đăng ký làm:</label>
+            <div style={{ display: 'flex', background: 'rgba(255, 255, 255, 0.02)', border: '1px solid var(--border-color)', borderRadius: '10px', padding: '2px' }}>
+              <button
+                type="button"
+                onClick={() => setRole('user')}
+                style={{
+                  flex: 1,
+                  padding: '8px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  background: role === 'user' ? 'rgba(57, 255, 20, 0.12)' : 'transparent',
+                  color: role === 'user' ? 'var(--accent-green)' : 'var(--text-secondary)',
+                  fontWeight: 700,
+                  fontSize: '12px',
+                  cursor: 'pointer'
+                }}
+              >
+                👤 Hội viên
+              </button>
+              <button
+                type="button"
+                onClick={() => setRole('pt')}
+                style={{
+                  flex: 1,
+                  padding: '8px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  background: role === 'pt' ? 'rgba(255, 87, 34, 0.12)' : 'transparent',
+                  color: role === 'pt' ? 'var(--accent-orange)' : 'var(--text-secondary)',
+                  fontWeight: 700,
+                  fontSize: '12px',
+                  cursor: 'pointer'
+                }}
+              >
+                🏋️‍♂️ Huấn luyện viên (PT)
+              </button>
+            </div>
+          </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             <label style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>Họ và tên của bạn:</label>
             <div style={{ position: 'relative' }}>
@@ -403,47 +493,94 @@ export default function Auth({ onLoginSuccess, onRegisterSuccess, usersDb }) {
             </div>
           </div>
 
-          {/* Grid Layout for Height & Weight */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>Chiều cao:</label>
-              <div style={{ position: 'relative' }}>
-                <Ruler size={16} color="var(--text-secondary)" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
-                <input 
-                  type="text"
-                  placeholder="Ví dụ: 175 cm"
-                  value={height}
-                  onChange={(e) => setHeight(e.target.value)}
-                  style={{
-                    width: '100%',
-                    background: 'rgba(255, 255, 255, 0.03)',
-                    border: '1px solid var(--border-color)',
-                    borderRadius: '10px',
-                    padding: '10px 12px 10px 38px',
-                    color: 'white',
-                    fontSize: '13px',
-                    outline: 'none',
-                    boxSizing: 'border-box'
-                  }}
-                />
+          {role === 'user' ? (
+            /* User fields: Height & Weight */
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>Chiều cao:</label>
+                <div style={{ position: 'relative' }}>
+                  <Ruler size={16} color="var(--text-secondary)" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+                  <input 
+                    type="text"
+                    placeholder="Ví dụ: 175 cm"
+                    value={height}
+                    onChange={(e) => setHeight(e.target.value)}
+                    style={{
+                      width: '100%',
+                      background: 'rgba(255, 255, 255, 0.03)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '10px',
+                      padding: '10px 12px 10px 38px',
+                      color: 'white',
+                      fontSize: '13px',
+                      outline: 'none',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
               </div>
-            </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>Cân nặng:</label>
-              <div style={{ position: 'relative' }}>
-                <Scale size={16} color="var(--text-secondary)" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>Cân nặng:</label>
+                <div style={{ position: 'relative' }}>
+                  <Scale size={16} color="var(--text-secondary)" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+                  <input 
+                    type="text"
+                    placeholder="Ví dụ: 70 kg"
+                    value={weight}
+                    onChange={(e) => setWeight(e.target.value)}
+                    style={{
+                      width: '100%',
+                      background: 'rgba(255, 255, 255, 0.03)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '10px',
+                      padding: '10px 12px 10px 38px',
+                      color: 'white',
+                      fontSize: '13px',
+                      outline: 'none',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* PT fields: Spec & Price */
+            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '12px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>Chuyên môn (phân cách bằng dấu phẩy):</label>
                 <input 
                   type="text"
-                  placeholder="Ví dụ: 70 kg"
-                  value={weight}
-                  onChange={(e) => setWeight(e.target.value)}
+                  placeholder="Vd: Calisthenics, Giảm cân"
+                  value={ptSpec}
+                  onChange={(e) => setPtSpec(e.target.value)}
                   style={{
                     width: '100%',
                     background: 'rgba(255, 255, 255, 0.03)',
                     border: '1px solid var(--border-color)',
                     borderRadius: '10px',
-                    padding: '10px 12px 10px 38px',
+                    padding: '10px 12px',
+                    color: 'white',
+                    fontSize: '13px',
+                    outline: 'none',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>Chi phí / buổi:</label>
+                <input 
+                  type="text"
+                  placeholder="Vd: 300.000đ/buổi"
+                  value={ptPrice}
+                  onChange={(e) => setPtPrice(e.target.value)}
+                  style={{
+                    width: '100%',
+                    background: 'rgba(255, 255, 255, 0.03)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '10px',
+                    padding: '10px 12px',
                     color: 'white',
                     fontSize: '13px',
                     outline: 'none',
@@ -452,7 +589,7 @@ export default function Auth({ onLoginSuccess, onRegisterSuccess, usersDb }) {
                 />
               </div>
             </div>
-          </div>
+          )}
 
           {/* Grid Layout for Gender & Birthday */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: '12px' }}>
@@ -506,31 +643,77 @@ export default function Auth({ onLoginSuccess, onRegisterSuccess, usersDb }) {
             </div>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            <label style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>Mục tiêu tập luyện:</label>
-            <div style={{ position: 'relative' }}>
-              <Target size={16} color="var(--text-secondary)" style={{ position: 'absolute', left: '12px', top: '15px' }} />
-              <textarea 
-                placeholder="Ví dụ: Tăng cơ giảm mỡ, đạt body 6 múi..."
-                value={goal}
-                onChange={(e) => setGoal(e.target.value)}
-                style={{
-                  width: '100%',
-                  background: 'rgba(255, 255, 255, 0.03)',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '10px',
-                  padding: '10px 12px 10px 38px',
-                  color: 'white',
-                  fontSize: '13px',
-                  outline: 'none',
-                  minHeight: '50px',
-                  fontFamily: 'inherit',
-                  boxSizing: 'border-box',
-                  resize: 'none'
-                }}
-              />
+          {role === 'user' ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>Mục tiêu tập luyện:</label>
+              <div style={{ position: 'relative' }}>
+                <Target size={16} color="var(--text-secondary)" style={{ position: 'absolute', left: '12px', top: '15px' }} />
+                <textarea 
+                  placeholder="Ví dụ: Tăng cơ giảm mỡ, đạt body 6 múi..."
+                  value={goal}
+                  onChange={(e) => setGoal(e.target.value)}
+                  style={{
+                    width: '100%',
+                    background: 'rgba(255, 255, 255, 0.03)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '10px',
+                    padding: '10px 12px 10px 38px',
+                    color: 'white',
+                    fontSize: '13px',
+                    outline: 'none',
+                    minHeight: '50px',
+                    fontFamily: 'inherit',
+                    boxSizing: 'border-box',
+                    resize: 'none'
+                  }}
+                />
+              </div>
             </div>
-          </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: '12px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>Số năm kinh nghiệm:</label>
+                <input 
+                  type="text"
+                  placeholder="Vd: 3 năm"
+                  value={ptExp}
+                  onChange={(e) => setPtExp(e.target.value)}
+                  style={{
+                    width: '100%',
+                    background: 'rgba(255, 255, 255, 0.03)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '10px',
+                    padding: '10px 12px',
+                    color: 'white',
+                    fontSize: '13px',
+                    outline: 'none',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>Chứng chỉ hành nghề:</label>
+                <input 
+                  type="text"
+                  placeholder="Vd: NASM-CPT, Bằng Thể Thao"
+                  value={ptCerts}
+                  onChange={(e) => setPtCerts(e.target.value)}
+                  style={{
+                    width: '100%',
+                    background: 'rgba(255, 255, 255, 0.03)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '10px',
+                    padding: '10px 12px',
+                    color: 'white',
+                    fontSize: '13px',
+                    outline: 'none',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+            </div>
+          )}
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             <label style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>Mật khẩu:</label>
@@ -604,58 +787,8 @@ export default function Auth({ onLoginSuccess, onRegisterSuccess, usersDb }) {
         /* Onboarding Form */
         <form onSubmit={handleOnboardingSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div style={{ textAlign: 'center', marginBottom: '8px' }}>
-            <h4 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--accent-green)' }}>Khảo sát chuyên sâu 🩺</h4>
-            <p className="subtitle" style={{ fontSize: '10.5px', marginTop: '2px' }}>Thiết lập chế độ an toàn cho sức khỏe và lịch tập</p>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            <label style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>Bệnh lý nền (nếu có):</label>
-            <div style={{ position: 'relative' }}>
-              <HeartPulse size={16} color="var(--text-secondary)" style={{ position: 'absolute', left: '12px', top: '12px' }} />
-              <textarea 
-                placeholder="Ví dụ: Tim mạch, huyết áp, xương khớp... (Hoặc để trống nếu khỏe mạnh)"
-                value={medicalCondition}
-                onChange={(e) => setMedicalCondition(e.target.value)}
-                style={{
-                  width: '100%',
-                  height: '65px',
-                  background: 'rgba(255, 255, 255, 0.03)',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '10px',
-                  padding: '10px 12px 10px 38px',
-                  color: 'white',
-                  fontSize: '12.5px',
-                  outline: 'none',
-                  boxSizing: 'border-box',
-                  resize: 'none'
-                }}
-              />
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            <label style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>Dị ứng thức ăn / kích thích (nếu có):</label>
-            <div style={{ position: 'relative' }}>
-              <ShieldAlert size={16} color="var(--text-secondary)" style={{ position: 'absolute', left: '12px', top: '12px' }} />
-              <textarea 
-                placeholder="Ví dụ: Dị ứng sữa tươi, hải sản, gluten... (Hoặc để trống)"
-                value={allergies}
-                onChange={(e) => setAllergies(e.target.value)}
-                style={{
-                  width: '100%',
-                  height: '65px',
-                  background: 'rgba(255, 255, 255, 0.03)',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '10px',
-                  padding: '10px 12px 10px 38px',
-                  color: 'white',
-                  fontSize: '12.5px',
-                  outline: 'none',
-                  boxSizing: 'border-box',
-                  resize: 'none'
-                }}
-              />
-            </div>
+            <h4 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--accent-green)' }}>Lịch tập luyện 📅</h4>
+            <p className="subtitle" style={{ fontSize: '10.5px', marginTop: '2px' }}>Thiết lập các ngày tập luyện của bạn trong tuần</p>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -692,30 +825,6 @@ export default function Auth({ onLoginSuccess, onRegisterSuccess, usersDb }) {
                   </button>
                 );
               })}
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            <label style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>Giờ tập mong muốn hàng ngày:</label>
-            <div style={{ position: 'relative' }}>
-              <Clock size={16} color="var(--text-secondary)" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
-              <input 
-                type="time"
-                value={trainingTime}
-                onChange={(e) => setTrainingTime(e.target.value)}
-                style={{
-                  width: '100%',
-                  background: 'rgba(255, 255, 255, 0.03)',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '10px',
-                  padding: '10px 12px 10px 38px',
-                  color: 'white',
-                  fontSize: '13px',
-                  outline: 'none',
-                  boxSizing: 'border-box',
-                  colorScheme: 'dark'
-                }}
-              />
             </div>
           </div>
 

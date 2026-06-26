@@ -1,8 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Play, Square, Activity, Sparkles, Clock, CheckCircle, Circle, Trophy, ArrowRight, RefreshCw, X, Trash2, GripVertical } from 'lucide-react';
+import { Play, Square, Activity, Sparkles, Clock, CheckCircle, Circle, Trophy, ArrowRight, RefreshCw, X, Trash2, GripVertical, Plus } from 'lucide-react';
 
-export default function WorkoutPlanner({ onCompleteTask, onWorkoutComplete, isWorkoutCompleted, setScreen }) {
-  const [selectedDay, setSelectedDay] = useState('Th 4'); // Default Wednesday (Today)
+export default function WorkoutPlanner({ onCompleteTask, onWorkoutComplete, isWorkoutCompleted, setScreen, workoutState, setWorkoutState, dietState, myProfile, onUpdateProfile, showToast }) {
+  // Real-time day synchronization helper
+  const getTodayString = () => {
+    const dayIndex = new Date().getDay(); // 0 is Sunday, 1 is Monday...
+    const mapping = ['CN', 'Th 2', 'Th 3', 'Th 4', 'Th 5', 'Th 6', 'Th 7'];
+    return mapping[dayIndex];
+  };
+
+  const [selectedDay, setSelectedDay] = useState(getTodayString());
   const [fatigueMode, setFatigueMode] = useState(false);
   const [timerRunning, setTimerRunning] = useState(false);
   const [seconds, setSeconds] = useState(0);
@@ -18,6 +25,83 @@ export default function WorkoutPlanner({ onCompleteTask, onWorkoutComplete, isWo
   const [aiPrompt, setAiPrompt] = useState('');
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [adaptiveWorkouts, setAdaptiveWorkouts] = useState({});
+
+  // Lazy medical survey states
+  const [showMedicalModal, setShowMedicalModal] = useState(false);
+  const [selectedConditions, setSelectedConditions] = useState([]);
+  const [customCondition, setCustomCondition] = useState('');
+  const [timeSlots, setTimeSlots] = useState(myProfile?.trainingTimes || ['18:00']);
+  const [selectedDays, setSelectedDays] = useState(myProfile?.trainingDays || ['Thứ 2', 'Thứ 4', 'Thứ 6']);
+  const [activeTimeSlot, setActiveTimeSlot] = useState(myProfile?.trainingTimes?.[0] || '18:00');
+
+  // Keep states in sync with profile updates
+  useEffect(() => {
+    if (myProfile) {
+      if (myProfile.trainingTimes) {
+        setTimeSlots(myProfile.trainingTimes);
+        if (!myProfile.trainingTimes.includes(activeTimeSlot)) {
+          setActiveTimeSlot(myProfile.trainingTimes[0] || '18:00');
+        }
+      }
+      if (myProfile.trainingDays) {
+        setSelectedDays(myProfile.trainingDays);
+      }
+    }
+  }, [myProfile]);
+
+  // Lazy trigger: show medical modal if medicalCondition is 'Không có' or empty
+  useEffect(() => {
+    if (myProfile && (!myProfile.medicalCondition || myProfile.medicalCondition === 'Không có' || myProfile.medicalCondition === 'Chưa cập nhật')) {
+      setShowMedicalModal(true);
+    }
+  }, [myProfile]);
+
+  const medicalConditionList = [
+    'Tim mạch',
+    'Cao huyết áp',
+    'Thoát vị đĩa đệm',
+    'Hen suyễn',
+    'Đau khớp gối',
+    'Tiểu đường',
+    'Thiếu máu'
+  ];
+
+  const handleSaveMedicalSurvey = () => {
+    let finalConditions = [...selectedConditions];
+    if (customCondition.trim()) {
+      finalConditions.push(customCondition.trim());
+    }
+
+    const conditionsString = finalConditions.length > 0 ? finalConditions.join(', ') : 'Không có';
+    
+    if (onUpdateProfile) {
+      onUpdateProfile({ 
+        medicalCondition: conditionsString,
+        trainingTimes: timeSlots,
+        trainingDays: selectedDays
+      });
+    }
+
+    if (showToast) {
+      showToast('Đã lưu hồ sơ y tế, lịch tập & khung giờ tập của bạn! 🩺', 'success');
+    }
+    setShowMedicalModal(false);
+  };
+
+  const handleAddTimeSlot = () => {
+    setTimeSlots([...timeSlots, '18:00']);
+  };
+
+  const handleRemoveTimeSlot = (index) => {
+    if (timeSlots.length > 1) {
+      setTimeSlots(timeSlots.filter((_, idx) => idx !== index));
+    }
+  };
+
+  const handleTimeSlotChange = (index, value) => {
+    const updated = timeSlots.map((ts, idx) => idx === index ? value : ts);
+    setTimeSlots(updated);
+  };
 
   const days = [
     { name: 'Th 2', label: 'T2' },
@@ -70,14 +154,6 @@ export default function WorkoutPlanner({ onCompleteTask, onWorkoutComplete, isWo
       { name: 'Deep Breathing Meditation', sets: '10 phút', rest: 'Tinh thần', calories: 10 }
     ]
   });
-
-  // Wednesday (Today) Fatigue Mode adapted workouts
-  const wednesdayFatigueWorkouts = [
-    { name: 'Light Lat Pulldown (Kéo xô nhẹ)', sets: '3 sets x 12 reps (AI giảm tạ)', rest: '90s', calories: 50 },
-    { name: 'Light Dumbbell Rows (Chèo tạ nhẹ)', sets: '3 sets x 10 reps (AI giảm tạ)', rest: '60s', calories: 40 },
-    { name: 'Planks (Gồng bụng nhẹ)', sets: '3 sets x 30 giây', rest: '60s', calories: 30 },
-    { name: 'Full Body Stretching (Căng cơ nhẹ)', sets: '10 phút', rest: 'Thư giãn', calories: 30 }
-  ];
 
   // Dynamic exercise pool representing various movements
   const exercisePool = [
@@ -139,22 +215,17 @@ export default function WorkoutPlanner({ onCompleteTask, onWorkoutComplete, isWo
 
     // Take top 6 closest to ensure variety, then pick 3
     const topCandidates = candidates.slice(0, 6);
-    // Shuffle and pick 3
     const shuffled = [...topCandidates].sort(() => 0.5 - Math.random());
     const selected = shuffled.slice(0, 3);
 
-    // Apply the user's requested variation: 5 to 10 calories up/down
     const offsets = [
       Math.floor(Math.random() * 6) + 5,   // +5 to +10
       -(Math.floor(Math.random() * 6) + 5), // -5 to -10
       Math.floor(Math.random() * 9) - 4    // -4 to +4
     ];
 
-    // Map selected templates to the target adjusted calories
     return selected.map((ex, idx) => {
-      const adjustedCalories = Math.max(targetCalories + offsets[idx], 10); // Don't let calories go below 10
-      
-      // Adjust sets/reps slightly based on the calorie difference
+      const adjustedCalories = Math.max(targetCalories + offsets[idx], 10);
       let adjustedSets = ex.sets;
       if (offsets[idx] > 0 && ex.sets.includes('reps')) {
         adjustedSets = ex.sets.replace(/(\d+)\s*reps/, (match, reps) => `${parseInt(reps) + 2} reps`);
@@ -173,22 +244,24 @@ export default function WorkoutPlanner({ onCompleteTask, onWorkoutComplete, isWo
 
   // Get current day's exercises
   const getDailyExercises = () => {
+    const key = timeSlots.length > 1 ? `${selectedDay}_${activeTimeSlot}` : selectedDay;
     if (fatigueMode) {
-      return adaptiveWorkouts[selectedDay] || workouts[selectedDay] || [];
+      return adaptiveWorkouts[key] || workouts[key] || workouts[selectedDay] || [];
     }
-    return workouts[selectedDay] || [];
+    return workouts[key] || workouts[selectedDay] || [];
   };
 
   const updateCurrentWorkouts = (newWorkoutsList) => {
+    const key = timeSlots.length > 1 ? `${selectedDay}_${activeTimeSlot}` : selectedDay;
     if (fatigueMode) {
       setAdaptiveWorkouts(prev => ({
         ...prev,
-        [selectedDay]: newWorkoutsList
+        [key]: newWorkoutsList
       }));
     } else {
       setWorkouts(prev => ({
         ...prev,
-        [selectedDay]: newWorkoutsList
+        [key]: newWorkoutsList
       }));
     }
   };
@@ -249,7 +322,7 @@ export default function WorkoutPlanner({ onCompleteTask, onWorkoutComplete, isWo
     setSummaryData(summary);
     setShowSummary(true);
 
-    onCompleteTask(2); // Complete task ID 2: Tập luyện
+    if (onCompleteTask) onCompleteTask(2); // Complete task ID 2
     if (onWorkoutComplete) {
       onWorkoutComplete(summary);
     }
@@ -265,19 +338,16 @@ export default function WorkoutPlanner({ onCompleteTask, onWorkoutComplete, isWo
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Trigger AI suggestions modal
   const handleRequestSwap = (index, exercise) => {
     setSwapTarget({ index, exercise });
     const suggestions = getAiAlternatives(exercise);
     setAiSuggestions(suggestions);
   };
 
-  // Perform exercise swap inline without alerts
   const handleExecuteSwap = (newExercise) => {
     if (swapTarget === null) return;
     const { index } = swapTarget;
     
-    // Update current day's workouts
     const dayWorkouts = [...currentExercises];
     dayWorkouts[index] = newExercise;
     
@@ -286,7 +356,6 @@ export default function WorkoutPlanner({ onCompleteTask, onWorkoutComplete, isWo
     setSwapTarget(null);
     setAiSuggestions([]);
 
-    // Inline Toast instead of browser alert
     setToastMessage("AI đã hoán đổi bài tập thành công! 🔄");
     setTimeout(() => setToastMessage(""), 2500);
   };
@@ -294,14 +363,11 @@ export default function WorkoutPlanner({ onCompleteTask, onWorkoutComplete, isWo
   const handleAutoPlan = () => {
     setIsAutoPlanning(true);
     
-    // Simulate AI thinking and calculation
     setTimeout(() => {
-      // Pick 3-4 random, distinct exercises from the pool for the current day
       const count = selectedDay === 'Th 5' || selectedDay === 'CN' ? 3 : 4;
       const shuffled = [...exercisePool].sort(() => 0.5 - Math.random());
       
       const newExercises = shuffled.slice(0, count).map(ex => {
-        // Vary calories slightly from base calories (+/- 5 to 10 kcal)
         const offset = (Math.floor(Math.random() * 6) + 5) * (Math.random() > 0.5 ? 1 : -1); 
         return {
           name: ex.name,
@@ -312,11 +378,8 @@ export default function WorkoutPlanner({ onCompleteTask, onWorkoutComplete, isWo
       });
 
       updateCurrentWorkouts(newExercises);
-
       setIsAutoPlanning(false);
-
-      // Show toast
-      setToastMessage("AI đã tự động thiết lập lại lịch tập tối ưu cho hôm nay! ⚡");
+      setToastMessage("AI đã tự động thiết lập lại lịch tập tối ưu! ⚡");
       setTimeout(() => setToastMessage(""), 3000);
     }, 1200);
   };
@@ -357,11 +420,9 @@ export default function WorkoutPlanner({ onCompleteTask, onWorkoutComplete, isWo
     setIsAutoPlanning(true);
 
     setTimeout(() => {
-      // Split user input into lowercase word tokens
       const lowerPrompt = aiPrompt.toLowerCase();
       const tokens = lowerPrompt.split(/[\s,.-]+/).filter(t => t.length > 0);
       
-      // Concept expansions / Synonyms mapping
       if (lowerPrompt.includes("thân dưới") || lowerPrompt.includes("dưới")) {
         tokens.push("chân", "đùi", "mông", "leg", "glute");
       }
@@ -369,15 +430,12 @@ export default function WorkoutPlanner({ onCompleteTask, onWorkoutComplete, isWo
         tokens.push("ngực", "lưng", "vai", "tay", "chest", "back", "shoulder", "arm");
       }
       
-      // Calculate match score for every exercise in our pool
       const candidates = exercisePool.map(ex => {
         let score = 0;
         tokens.forEach(token => {
-          // Check if token matches exercise tags
           if (ex.tags.some(tag => tag.toLowerCase().includes(token) || token.includes(tag.toLowerCase()))) {
             score += 2;
           }
-          // Check if token matches exercise name
           if (ex.name.toLowerCase().includes(token)) {
             score += 1;
           }
@@ -385,17 +443,13 @@ export default function WorkoutPlanner({ onCompleteTask, onWorkoutComplete, isWo
         return { ...ex, score };
       });
 
-      // Filter to candidates with score > 0, sorted by score descending
       const matched = candidates.filter(ex => ex.score > 0).sort((a, b) => b.score - a.score);
-
-      // Determine intensity based on keywords in the prompt
       const isHeavy = tokens.some(t => ['nặng', 'heavy', 'sung', 'khoẻ', 'mạnh', 'tối đa', 'high', 'căng'].includes(t));
       const isLight = tokens.some(t => ['nhẹ', 'mệt', 'mỏi', 'yếu', 'phục hồi', 'giãn', 'relax', 'low', 'thả lỏng'].includes(t));
 
       let finalSelected = [];
 
       if (matched.length === 0) {
-        // Fallback: if no keywords match, pick 5 random exercises from the pool
         const shuffled = [...exercisePool].sort(() => 0.5 - Math.random());
         finalSelected = shuffled.slice(0, 5).map(ex => {
           let adjustedCalories = ex.baseCalories;
@@ -409,30 +463,18 @@ export default function WorkoutPlanner({ onCompleteTask, onWorkoutComplete, isWo
             adjustedCalories = Math.max(ex.baseCalories - 15, 15);
             adjustedSets = ex.sets.replace('sets', 'sets (nhẹ)').replace(/(\d+)\s*reps/, (match, reps) => `${Math.max(parseInt(reps) - 2, 6)} reps`);
           }
-          return {
-            name: ex.name,
-            sets: adjustedSets,
-            rest: ex.rest,
-            calories: adjustedCalories
-          };
+          return { name: ex.name, sets: adjustedSets, rest: ex.rest, calories: adjustedCalories };
         });
         setToastMessage("AI không tìm thấy bài tập khớp từ khóa. Đã thiết lập lịch tập ngẫu nhiên! ⚡");
       } else {
-        // Target count is dynamic between 4 and 6 exercises based on matches
         let targetCount = Math.max(4, Math.min(matched.length, 6));
-
-        // Take the top matched templates
         let selectedTemplates = matched.slice(0, targetCount);
 
-        // If the matching templates are fewer than targetCount (e.g. matched 2 but target is 4), pad list
         if (selectedTemplates.length < targetCount) {
           const matchedNames = new Set(selectedTemplates.map(t => t.name.toLowerCase()));
           const remainingPool = exercisePool.filter(ex => !matchedNames.has(ex.name.toLowerCase()));
-          
-          // Pad with related exercises sharing tags
           const matchedTags = new Set(selectedTemplates.flatMap(t => t.tags));
           const relatedExercises = remainingPool.filter(ex => ex.tags.some(tag => matchedTags.has(tag)));
-          
           const paddingCandidates = relatedExercises.length > 0 ? relatedExercises : remainingPool;
           const shuffledPadding = [...paddingCandidates].sort(() => 0.5 - Math.random());
           
@@ -442,7 +484,6 @@ export default function WorkoutPlanner({ onCompleteTask, onWorkoutComplete, isWo
           }
         }
 
-        // Apply intensity adjustments to final selected list
         finalSelected = selectedTemplates.map(ex => {
           let adjustedCalories = ex.baseCalories;
           let adjustedSets = ex.sets;
@@ -457,12 +498,7 @@ export default function WorkoutPlanner({ onCompleteTask, onWorkoutComplete, isWo
             adjustedSets = ex.sets.replace('sets', 'sets (nhẹ)').replace(/(\d+)\s*reps/, (match, reps) => `${Math.max(parseInt(reps) - 2, 6)} reps`);
           }
 
-          return {
-            name: ex.name,
-            sets: adjustedSets,
-            rest: ex.rest,
-            calories: adjustedCalories
-          };
+          return { name: ex.name, sets: adjustedSets, rest: ex.rest, calories: adjustedCalories };
         });
 
         setToastMessage(`AI Adaptive: Đã lên lịch ${finalSelected.length} bài tập phù hợp! 🎯`);
@@ -478,12 +514,18 @@ export default function WorkoutPlanner({ onCompleteTask, onWorkoutComplete, isWo
     }, 1200);
   };
 
-  // Validation conditions
-  const isToday = selectedDay === 'Th 4';
+  const handleSkipWorkout = () => {
+    setWorkoutState('skipped');
+    if (showToast) {
+      showToast('Đã báo bỏ tập hôm nay! FitMate AI đã tự động giảm 300 kcal nạp trong ngày. 🥗', 'orange');
+    }
+  };
+
+  const isToday = selectedDay === getTodayString();
   const canStart = isToday && !isWorkoutCompleted;
 
   return (
-    <div className="screen-content animate-slide-up" style={{ position: 'relative' }}>
+    <div className="screen-content animate-slide-up" style={{ position: 'relative', paddingBottom: '80px', display: 'flex', flexDirection: 'column', height: '100%', overflowY: 'auto' }}>
       
       {/* Inline Toast Banner */}
       {toastMessage && (
@@ -499,402 +541,180 @@ export default function WorkoutPlanner({ onCompleteTask, onWorkoutComplete, isWo
           borderRadius: '14px',
           fontSize: '13px',
           fontWeight: 600,
-          textAlign: 'left',
-          zIndex: 1005,
-          boxShadow: '0 8px 32px rgba(57, 255, 20, 0.2)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px'
-        }}>
-          <span style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center', 
-            background: 'rgba(57, 255, 20, 0.15)', 
-            borderRadius: '50%', 
-            padding: '4px' 
-          }}>
-            <CheckCircle size={14} color="var(--accent-green)" />
-          </span>
-          <span>{toastMessage}</span>
-        </div>
-      )}
-
-      {/* 1. Modal: AI Exercise Swap Suggestions */}
-      {swapTarget && (
-        <div style={{
-          position: 'absolute',
-          inset: 0,
-          background: 'rgba(12, 15, 18, 0.95)',
-          zIndex: 1002,
-          borderRadius: '30px',
-          padding: '24px 20px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '16px'
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontWeight: 800, fontSize: '15px', color: 'var(--accent-green)' }}>AI Adaptive Swap</span>
-            <button 
-              onClick={() => setSwapTarget(null)}
-              style={{ background: 'rgba(255,255,255,0.05)', border: 'none', color: 'white', borderRadius: '50%', width: '28px', height: '28px', cursor: 'pointer' }}
-            >
-              <X size={14} />
-            </button>
-          </div>
-
-          <div>
-            <span className="subtitle" style={{ fontSize: '10px' }}>Bài gốc cần thay thế:</span>
-            <div style={{ fontSize: '13px', fontWeight: 700, marginTop: '2px' }}>{swapTarget.exercise.name}</div>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', flex: 1, overflowY: 'auto' }}>
-            <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-secondary)' }}>AI Gợi ý thay thế phù hợp:</span>
-            
-            {aiSuggestions.map((sug, idx) => (
-              <div 
-                key={idx}
-                className="glass-card highlight-green" 
-                style={{ 
-                  display: 'flex', 
-                  flexDirection: 'column', 
-                  gap: '6px', 
-                  cursor: 'pointer',
-                  borderColor: 'rgba(57, 255, 20, 0.2)' 
-                }}
-                onClick={() => handleExecuteSwap(sug)}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <span style={{ fontSize: '12px', fontWeight: 700 }}>{sug.name}</span>
-                  <span style={{ fontSize: '11px', color: 'var(--accent-orange)', fontWeight: 700 }}>-{sug.calories} kcal</span>
-                </div>
-                <div style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>
-                  {sug.sets} • Nghỉ {sug.rest}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* 2. Modal: Summary Deficit Calorie */}
-      {showSummary && summaryData && (
-        <div style={{
-          position: 'absolute',
-          inset: 0,
-          background: 'rgba(12, 15, 18, 0.95)',
           zIndex: 1000,
-          borderRadius: '30px',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-          padding: '24px 20px',
-          gap: '16px'
+          boxShadow: '0 8px 32px rgba(57, 255, 20, 0.2)'
         }}>
-          <div style={{
-            width: '60px',
-            height: '60px',
-            borderRadius: '50%',
-            background: 'rgba(255, 87, 34, 0.1)',
-            color: 'var(--accent-orange)',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            border: '2px solid var(--accent-orange)'
-          }}>
-            <Trophy size={32} />
-          </div>
-
-          <div style={{ textAlign: 'center' }}>
-            <h3 className="title-medium" style={{ fontSize: '18px' }}>
-              {summaryData.exercises.length === activeExercises.length ? "Buổi tập trọn vẹn! 🏆" : "Hoàn thành sớm! ⏱️"}
-            </h3>
-            
-            {/* Inline Streak Reward Feedback inside Modal */}
-            {summaryData.exercises.length >= 2 ? (
-              <p style={{ color: 'var(--accent-green)', fontSize: '12.5px', fontWeight: 700, marginTop: '6px', background: 'rgba(57, 255, 20, 0.1)', padding: '4px 12px', borderRadius: '20px', display: 'inline-block' }}>
-                Đã cộng +1 ngày Streak tập luyện! 🔥
-              </p>
-            ) : (
-              <p style={{ color: 'var(--accent-orange)', fontSize: '11px', marginTop: '6px', background: 'rgba(255, 87, 34, 0.1)', padding: '4px 12px', borderRadius: '20px', display: 'inline-block', fontWeight: 600 }}>
-                Tập thêm {2 - summaryData.exercises.length} bài nữa để nhận Streak nhé! 💪
-              </p>
-            )}
-          </div>
-
-          {/* Stats Box */}
-          <div style={{ display: 'flex', gap: '12px', width: '100%', justifyContent: 'center', margin: '8px 0' }}>
-            <div className="glass-card" style={{ flex: 1, textAlign: 'center', padding: '12px 6px' }}>
-              <span className="subtitle" style={{ fontSize: '9px' }}>Thời gian</span>
-              <div style={{ fontSize: '16px', fontWeight: 800, color: 'white', marginTop: '2px' }}>
-                {summaryData.time}
-              </div>
-            </div>
-            <div className="glass-card" style={{ flex: 1, textAlign: 'center', padding: '12px 6px', borderColor: 'var(--accent-orange)' }}>
-              <span className="subtitle" style={{ fontSize: '9px' }}>Calo tiêu hao</span>
-              <div style={{ fontSize: '16px', fontWeight: 800, color: 'var(--accent-orange)', marginTop: '2px' }}>
-                -{summaryData.calories} kcal
-              </div>
-            </div>
-          </div>
-
-          {/* Exercises Deficit Breakdown List */}
-          <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '180px', overflowY: 'auto' }}>
-            <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-secondary)' }}>Báo cáo thâm hụt từng bài:</span>
-            {summaryData.exercises.map((ex, idx) => (
-              <div key={idx} style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                fontSize: '11px',
-                padding: '6px 10px',
-                background: 'rgba(255,255,255,0.02)',
-                borderRadius: '8px',
-                border: '1px solid var(--border-color)'
-              }}>
-                <span style={{ color: 'var(--text-primary)', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', maxWidth: '200px' }}>
-                  {ex.name}
-                </span>
-                <span style={{ color: 'var(--accent-orange)', fontWeight: 700 }}>-{ex.calories} kcal</span>
-              </div>
-            ))}
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', marginTop: '10px' }}>
-            <button 
-              className="btn-primary btn-orange" 
-              onClick={() => {
-                setShowSummary(false);
-                if (setScreen) setScreen('dashboard');
-              }} 
-              style={{ width: '100%' }}
-            >
-              Về Trang chủ (Xem Streak)
-              <ArrowRight size={16} />
-            </button>
-            <button 
-              className="btn-secondary" 
-              onClick={() => setShowSummary(false)} 
-              style={{ width: '100%', padding: '10px' }}
-            >
-              Xem lại Lịch tập
-            </button>
-          </div>
+          {toastMessage}
         </div>
       )}
 
       {/* Title */}
-      <div>
-        <h2 className="title-large" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Activity color="var(--accent-orange)" size={22} />
-          AI Workout Planner
-        </h2>
-        <p className="subtitle">Lập lịch tập thích ứng 24/7 dựa trên thể trạng</p>
-      </div>
-
-      {/* Week Calendar Ribbon (Disabled if training) */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '4px', opacity: timerRunning ? 0.5 : 1, pointerEvents: timerRunning ? 'none' : 'auto' }}>
-        {days.map((day) => (
-          <button
-            key={day.name}
-            onClick={() => {
-              setSelectedDay(day.name);
-              setAiPrompt('');
-            }}
-            style={{
-              flex: 1,
-              padding: '12px 6px',
-              borderRadius: '12px',
-              border: '1px solid var(--border-color)',
-              background: selectedDay === day.name ? 'rgba(255, 87, 34, 0.15)' : 'var(--bg-card)',
-              borderColor: selectedDay === day.name ? 'var(--accent-orange)' : 'var(--border-color)',
-              color: selectedDay === day.name ? 'var(--accent-orange)' : 'var(--text-primary)',
-              cursor: 'pointer',
-              fontWeight: 700,
-              fontSize: '12px',
-              transition: 'all 0.2s ease',
-              textAlign: 'center'
-            }}
-          >
-            <div>{day.label}</div>
-            <div style={{ 
-              width: '4px', 
-              height: '4px', 
-              borderRadius: '50%', 
-              background: selectedDay === day.name ? 'var(--accent-orange)' : 'transparent',
-              margin: '4px auto 0'
-            }} />
-          </button>
-        ))}
-      </div>
-
-      {/* Fatigue Toggle Option */}
-      <div 
-        className="glass-card" 
-        style={{ 
-          display: 'flex', 
-          flexDirection: 'column', 
-          gap: '10px',
-          borderColor: fatigueMode ? 'rgba(57, 255, 20, 0.3)' : 'var(--border-color)',
-          opacity: timerRunning ? 0.5 : 1,
-          pointerEvents: timerRunning ? 'none' : 'auto'
-        }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <Sparkles size={16} color="var(--accent-green)" />
-            <span style={{ fontSize: '13px', fontWeight: 700 }}>Chế độ mệt mỏi (AI Adaptive)</span>
-          </div>
-          <label className="switch" style={{ position: 'relative', display: 'inline-block', width: '40px', height: '20px' }}>
-            <input 
-              type="checkbox" 
-              checked={fatigueMode} 
-              onChange={() => {
-                const next = !fatigueMode;
-                setFatigueMode(next);
-                if (!next) {
-                  setAiPrompt('');
-                }
-              }}
-              style={{ opacity: 0, width: 0, height: 0 }}
-            />
-            <span style={{
-              position: 'absolute',
-              cursor: 'pointer',
-              inset: 0,
-              backgroundColor: fatigueMode ? 'var(--accent-green)' : '#2d3748',
-              borderRadius: '20px',
-              transition: '0.4s'
-            }}>
-              <span style={{
-                position: 'absolute',
-                content: '""',
-                height: '14px',
-                width: '14px',
-                left: fatigueMode ? '22px' : '3px',
-                bottom: '3px',
-                backgroundColor: 'white',
-                borderRadius: '50%',
-                transition: '0.4s'
-              }} />
-            </span>
-          </label>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div>
+          <h2 className="title-large" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Sparkles color="var(--accent-orange)" size={22} />
+            Luyện Tập Thích Ứng
+          </h2>
+          <p className="subtitle">Lập giáo án AI linh hoạt theo mục tiêu & thể trạng</p>
         </div>
-
-        {fatigueMode ? (
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', fontSize: '11px', color: 'var(--accent-green)' }}>
-            <Sparkles size={14} style={{ marginTop: '2px', flexShrink: 0 }} />
-            <span>
-              AI Adaptive đang kích hoạt. Hãy nhập thể trạng hoặc vùng cơ muốn tập ở dưới để AI phân tích và tự động lên lịch tập!
-            </span>
-          </div>
-        ) : (
-          <p className="subtitle" style={{ fontSize: '11px' }}>
-            AI sẽ tự điều chỉnh bài tập dựa theo thể trạng, nhóm cơ và phương pháp tập mong muốn của bạn.
-          </p>
-        )}
-
-        {fatigueMode && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px solid var(--border-color)', paddingTop: '10px', marginTop: '4px' }}>
-            <label style={{ fontSize: '11.5px', color: 'var(--text-secondary)', fontWeight: 600 }}>
-              Nhập thể trạng, mục tiêu (Ví dụ: mệt mỏi tập bụng nhẹ, vai lưng nặng sung sức...):
-            </label>
-            <div style={{ display: 'flex', gap: '6px' }}>
-              <input 
-                type="text"
-                value={aiPrompt}
-                onChange={(e) => setAiPrompt(e.target.value)}
-                placeholder="Ví dụ: mệt mỏi, tập bụng nhẹ nhàng..."
-                style={{
-                  flex: 1,
-                  background: 'rgba(255, 255, 255, 0.03)',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '10px',
-                  padding: '8px 10px',
-                  color: 'white',
-                  fontSize: '12.5px',
-                  outline: 'none',
-                  fontFamily: 'inherit'
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleApplyAdaptivePrompt();
-                }}
-              />
-              <button
-                onClick={handleApplyAdaptivePrompt}
-                disabled={isAutoPlanning}
-                style={{
-                  background: 'var(--accent-green)',
-                  border: 'none',
-                  color: 'var(--bg-dark)',
-                  borderRadius: '10px',
-                  padding: '8px 14px',
-                  fontSize: '12px',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  transition: 'opacity 0.2s',
-                  opacity: isAutoPlanning ? 0.7 : 1
-                }}
-              >
-                {isAutoPlanning ? 'Đang lọc...' : 'Lọc AI'}
-              </button>
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* Auto Plan Button */}
-      {!timerRunning && !isWorkoutCompleted && (
-        <button
-          onClick={handleAutoPlan}
-          disabled={isAutoPlanning}
+      {/* Medical/Injury Profile Summary Block */}
+      <div className="glass-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderColor: 'rgba(255, 87, 34, 0.15)', background: 'linear-gradient(135deg, rgba(255, 87, 34, 0.03) 0%, rgba(0,0,0,0) 100%)' }}>
+        <div>
+          <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>Hồ sơ y tế & chấn thương của bạn:</span>
+          <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--accent-orange)', marginTop: '2px' }}>
+            {myProfile?.medicalCondition || 'Không có'}
+          </div>
+          <div style={{ fontSize: '9px', color: 'var(--text-secondary)', marginTop: '4px', lineHeight: '1.4' }}>
+            Lịch tập: {myProfile?.trainingDays ? myProfile.trainingDays.join(', ') : 'Chưa cài đặt'}
+            <br />
+            Giờ tập: {myProfile?.trainingTimes ? myProfile.trainingTimes.join(', ') : 'Chưa cài đặt'}
+          </div>
+        </div>
+        <button 
+          onClick={() => {
+            if (myProfile?.trainingTimes) setTimeSlots(myProfile.trainingTimes);
+            if (myProfile?.trainingDays) setSelectedDays(myProfile.trainingDays);
+            setShowMedicalModal(true);
+          }}
           style={{
-            width: '100%',
-            padding: '12px',
-            borderRadius: '14px',
-            border: '1.5px dashed var(--accent-orange)',
-            background: 'rgba(255, 87, 34, 0.08)',
-            color: 'var(--accent-orange)',
+            background: 'rgba(255, 255, 255, 0.05)',
+            border: '1px solid var(--border-color)',
+            color: 'white',
+            padding: '4px 10px',
+            borderRadius: '8px',
+            fontSize: '11px',
             fontWeight: 700,
-            fontSize: '13px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '8px',
-            boxShadow: '0 4px 15px rgba(255, 87, 34, 0.1)',
-            transition: 'all 0.2s ease',
-            opacity: isAutoPlanning ? 0.7 : 1,
-            pointerEvents: isAutoPlanning ? 'none' : 'auto'
+            cursor: 'pointer'
           }}
         >
-          <Sparkles size={16} className={isAutoPlanning ? 'animate-spin' : ''} />
-          {isAutoPlanning ? 'AI đang thiết kế lịch tập tối ưu...' : 'Tự động thiết lịch bằng AI'}
+          Cập nhật
         </button>
+      </div>
+
+      {/* Week Day selector row */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '4px', marginTop: '12px' }}>
+        {days.map((d) => {
+          const isTodayBtn = d.name === getTodayString();
+          const isSelected = d.name === selectedDay;
+          return (
+            <button
+              key={d.name}
+              onClick={() => {
+                if (timerRunning) return;
+                setSelectedDay(d.name);
+                setShowSummary(false);
+              }}
+              style={{
+                flex: 1,
+                height: '38px',
+                borderRadius: '10px',
+                border: isSelected ? '1px solid var(--accent-orange)' : '1px solid var(--border-color)',
+                background: isSelected ? 'rgba(255, 87, 34, 0.12)' : 'rgba(255, 255, 255, 0.01)',
+                color: isSelected ? 'var(--accent-orange)' : 'white',
+                fontSize: '11.5px',
+                fontWeight: 700,
+                cursor: timerRunning ? 'not-allowed' : 'pointer',
+                position: 'relative',
+                transition: 'all 0.2s'
+              }}
+            >
+              {d.label}
+              {isTodayBtn && (
+                <span style={{ position: 'absolute', bottom: '3px', left: '50%', transform: 'translateX(-50%)', width: '4px', height: '4px', borderRadius: '50%', background: 'var(--accent-orange)' }} />
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* AI Re-plan prompt block */}
+      {!timerRunning && !isWorkoutCompleted && (
+        <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '12px' }}>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <input 
+              type="text" 
+              placeholder="Vd: Chấn thương cổ tay, đau khớp gối nhẹ..." 
+              value={aiPrompt}
+              onChange={(e) => setAiPrompt(e.target.value)}
+              style={{
+                flex: 1,
+                background: 'rgba(255, 255, 255, 0.03)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '10px',
+                padding: '8px 12px',
+                color: 'white',
+                fontSize: '12px',
+                outline: 'none'
+              }}
+            />
+            <button 
+              className="btn-primary" 
+              onClick={handleApplyAdaptivePrompt} 
+              disabled={isAutoPlanning}
+              style={{ width: 'auto', padding: '0 12px', background: 'var(--accent-orange)', color: 'white', fontSize: '11.5px', opacity: isAutoPlanning ? 0.6 : 1 }}
+            >
+              AI Thích ứng
+            </button>
+          </div>
+        </div>
       )}
 
-      {/* Exercise List */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+      {/* Exercises List container */}
+      <div style={{ marginTop: '14px', flex: 1, display: 'flex', flexDirection: 'column', gap: '10px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontSize: '13px', fontWeight: 700 }}>
-            {timerRunning ? 'Bảng kiểm tra buổi tập' : `Danh sách bài tập (${selectedDay})`}
+            Danh sách bài tập ngày {selectedDay} {timeSlots.length > 1 && `(Ca ${activeTimeSlot})`}
           </span>
-          <span className="subtitle" style={{ fontSize: '11px' }}>
-            {currentExercises.length} bài tập • ~45 phút
-          </span>
+          {!timerRunning && !isWorkoutCompleted && (
+            <button onClick={handleAutoPlan} style={{ background: 'none', border: 'none', color: 'var(--accent-orange)', fontSize: '11px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <RefreshCw size={12} /> AI Thiết lập lại
+            </button>
+          )}
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        {/* Horizontal tabs for multiple time slots */}
+        {timeSlots.length > 1 && (
+          <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '6px', borderBottom: '1px dashed var(--border-color)' }}>
+            {timeSlots.map((slot) => {
+              const isActive = activeTimeSlot === slot;
+              return (
+                <button
+                  key={slot}
+                  onClick={() => {
+                    if (timerRunning) return;
+                    setActiveTimeSlot(slot);
+                    setShowSummary(false);
+                  }}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '8px',
+                    border: isActive ? '1px solid var(--accent-orange)' : '1px solid var(--border-color)',
+                    background: isActive ? 'rgba(255, 87, 34, 0.12)' : 'rgba(255, 255, 255, 0.02)',
+                    color: isActive ? 'var(--accent-orange)' : 'var(--text-secondary)',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    cursor: timerRunning ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.2s',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  ⏱️ Ca {slot}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {timerRunning ? (
-            /* Active Training Exercise Checkboxes */
+            /* Active Live Timer Workout List */
             activeExercises.map((ex) => (
               <div 
                 key={ex.id}
+                className="glass-card" 
                 onClick={() => toggleExerciseStatus(ex.id)}
-                className="glass-card animate-slide-in"
                 style={{ 
                   display: 'flex', 
                   alignItems: 'center',
@@ -911,12 +731,7 @@ export default function WorkoutPlanner({ onCompleteTask, onWorkoutComplete, isWo
                   <Circle size={18} color="var(--text-secondary)" />
                 )}
                 <div style={{ flex: 1 }}>
-                  <div style={{ 
-                    fontSize: '13px', 
-                    fontWeight: 700,
-                    textDecoration: ex.completed ? 'line-through' : 'none',
-                    color: ex.completed ? 'var(--text-secondary)' : 'var(--text-primary)'
-                  }}>
+                  <div style={{ fontSize: '13px', fontWeight: 700, textDecoration: ex.completed ? 'line-through' : 'none', color: ex.completed ? 'var(--text-secondary)' : 'var(--text-primary)' }}>
                     {ex.name}
                   </div>
                   <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
@@ -931,32 +746,8 @@ export default function WorkoutPlanner({ onCompleteTask, onWorkoutComplete, isWo
               <div 
                 key={index}
                 className="glass-card" 
-                draggable={!timerRunning && !isWorkoutCompleted}
-                onDragStart={(e) => {
-                  if (timerRunning || isWorkoutCompleted) return;
-                  setDraggedIndex(index);
-                  e.dataTransfer.effectAllowed = "move";
-                }}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                }}
-                onDrop={(e) => {
-                  if (timerRunning || isWorkoutCompleted) return;
-                  handleDrop(index);
-                }}
-                style={{ 
-                  display: 'flex', 
-                  alignItems: 'center',
-                  padding: '12px 14px',
-                  background: draggedIndex === index ? 'rgba(255,255,255,0.05)' : 'rgba(255, 255, 255, 0.01)',
-                  opacity: draggedIndex === index ? 0.5 : 1,
-                  cursor: !timerRunning && !isWorkoutCompleted ? 'grab' : 'default',
-                  transition: 'opacity 0.2s, background 0.2s',
-                  border: draggedIndex === index ? '1px dashed var(--accent-orange)' : '1px solid var(--border-color)',
-                  gap: '10px'
-                }}
+                style={{ display: 'flex', alignItems: 'center', padding: '12px 14px', background: draggedIndex === index ? 'rgba(255,255,255,0.05)' : 'rgba(255, 255, 255, 0.01)', opacity: draggedIndex === index ? 0.5 : 1, border: draggedIndex === index ? '1px dashed var(--accent-orange)' : '1px solid var(--border-color)', gap: '10px' }}
               >
-                {/* Drag Handle Icon on the left */}
                 {!timerRunning && !isWorkoutCompleted && (
                   <div style={{ color: 'var(--text-secondary)', cursor: 'grab', paddingRight: '4px', display: 'flex', alignItems: 'center' }}>
                     <GripVertical size={14} />
@@ -972,52 +763,17 @@ export default function WorkoutPlanner({ onCompleteTask, onWorkoutComplete, isWo
                   </div>
                 </div>
                 
-                {/* Action Buttons Group */}
                 {!isWorkoutCompleted && (
                   <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                     <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleRequestSwap(index, ex);
-                      }}
-                      style={{
-                        background: 'rgba(57, 255, 20, 0.05)',
-                        border: '1px solid rgba(57, 255, 20, 0.15)',
-                        color: 'var(--accent-green)',
-                        fontSize: '10px',
-                        fontWeight: 700,
-                        padding: '4px 8px',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '3px',
-                        transition: 'all 0.2s ease'
-                      }}
+                      onClick={(e) => { e.stopPropagation(); handleRequestSwap(index, ex); }}
+                      style={{ background: 'rgba(57, 255, 20, 0.05)', border: '1px solid rgba(57, 255, 20, 0.15)', color: 'var(--accent-green)', fontSize: '10px', fontWeight: 700, padding: '4px 8px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '3px' }}
                     >
-                      <RefreshCw size={10} />
-                      Đổi bài
+                      <RefreshCw size={10} /> Đổi bài
                     </button>
-                    
-                    {/* Delete button */}
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteExercise(index);
-                      }}
-                      style={{
-                        background: 'rgba(255, 87, 34, 0.05)',
-                        border: '1px solid rgba(255, 87, 34, 0.15)',
-                        color: 'var(--accent-orange)',
-                        padding: '5px',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        transition: 'all 0.2s ease'
-                      }}
-                      title="Xóa bài tập này"
+                      onClick={(e) => { e.stopPropagation(); handleDeleteExercise(index); }}
+                      style={{ background: 'rgba(255, 87, 34, 0.05)', border: '1px solid rgba(255, 87, 34, 0.15)', color: 'var(--accent-orange)', padding: '5px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     >
                       <Trash2 size={12} />
                     </button>
@@ -1028,6 +784,252 @@ export default function WorkoutPlanner({ onCompleteTask, onWorkoutComplete, isWo
           )}
         </div>
       </div>
+
+      {/* AI Medical citations for workout planner */}
+      <div className="glass-card" style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '6px', padding: '12px', background: 'rgba(255,255,255,0.01)', borderColor: 'rgba(255,255,255,0.05)' }}>
+        <h5 style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+          📚 Nguồn Tham Chiếu Khoa Học & Y Học Thể Thao
+        </h5>
+        <p style={{ fontSize: '9px', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
+          Các giáo án luyện tập của FitMate tuân thủ tiêu chuẩn an toàn y khoa từ:
+          <br />• <strong>Hiệp hội Y học Thể thao Hoa Kỳ (ACSM)</strong> - Hướng dẫn tập luyện lâm sàng.
+          <br />• <strong>Hiệp hội Tim mạch Hoa Kỳ (AHA)</strong> - Định mức nhịp tim và cường độ tập.
+          <br />• <strong>Khuyến nghị từ Bệnh viện Trung ương Quân đội 108</strong> về tập phục hồi chấn thương cơ xương khớp.
+        </p>
+      </div>
+
+      {/* Swap suggestions modal */}
+      {swapTarget && (
+        <div style={{ position: 'absolute', inset: 0, background: 'rgba(12, 15, 18, 0.95)', zIndex: 1200, borderRadius: '30px', padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontWeight: 800, fontSize: '15px', color: 'var(--accent-green)' }}>Gợi ý bài tập thay thế từ AI</span>
+            <button onClick={() => setSwapTarget(null)} style={{ background: 'rgba(255,255,255,0.05)', border: 'none', color: 'white', borderRadius: '50%', width: '28px', height: '28px', cursor: 'pointer' }}>
+              <X size={14} />
+            </button>
+          </div>
+          <p className="subtitle" style={{ fontSize: '11px' }}>Chọn bài tập được AI đề xuất cho bài: <strong>{swapTarget.exercise.name}</strong></p>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {aiSuggestions.map((sug, idx) => (
+              <div key={idx} className="glass-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px' }}>
+                <div>
+                  <div style={{ fontSize: '12.5px', fontWeight: 700 }}>{sug.name}</div>
+                  <div style={{ fontSize: '10.5px', color: 'var(--text-secondary)', marginTop: '2px' }}>{sug.sets} • <span style={{ color: 'var(--accent-orange)' }}>-{sug.calories} kcal</span></div>
+                </div>
+                <button onClick={() => handleExecuteSwap(sug)} style={{ background: 'var(--accent-green)', border: 'none', color: 'var(--bg-dark)', fontSize: '10.5px', fontWeight: 700, padding: '5px 12px', borderRadius: '8px', cursor: 'pointer' }}>Chọn</button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Lazy Medical Survey Modal */}
+      {showMedicalModal && (
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'rgba(12, 15, 18, 0.96)',
+          zIndex: 3000,
+          borderRadius: '30px',
+          padding: '24px 20px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '14px',
+          overflowY: 'auto'
+        }}>
+          <div style={{ textAlign: 'center', marginBottom: '8px' }}>
+            <div style={{ fontSize: '24px', marginBottom: '6px' }}>🩺</div>
+            <h4 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--accent-orange)' }}>Khảo Sát Bệnh Lý & Chấn Thương</h4>
+            <p className="subtitle" style={{ fontSize: '10.5px', marginTop: '2px' }}>AI của FitMate sẽ tự động điều chỉnh bài tập phù hợp với thể trạng y tế của bạn</p>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
+            <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>Tích chọn các tình trạng sức khỏe (bệnh nền):</span>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+              {medicalConditionList.map(condition => {
+                const isSelected = selectedConditions.includes(condition);
+                return (
+                  <button
+                    key={condition}
+                    type="button"
+                    onClick={() => {
+                      if (isSelected) {
+                        setSelectedConditions(selectedConditions.filter(c => c !== condition));
+                      } else {
+                        setSelectedConditions([...selectedConditions, condition]);
+                      }
+                    }}
+                    style={{
+                      padding: '8px',
+                      borderRadius: '8px',
+                      border: isSelected ? '1px solid var(--accent-orange)' : '1px solid var(--border-color)',
+                      background: isSelected ? 'rgba(255, 87, 34, 0.12)' : 'rgba(255, 255, 255, 0.02)',
+                      color: isSelected ? 'var(--accent-orange)' : 'var(--text-secondary)',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      textAlign: 'left'
+                    }}
+                  >
+                    {isSelected ? '✓ ' : '+ '} {condition}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '10px' }}>
+              <label style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>Chấn thương hoặc lưu ý khác (nếu có):</label>
+              <input 
+                type="text" 
+                placeholder="Vd: Đau mỏi khớp vai, yếu cổ tay, gãy tay cũ..."
+                value={customCondition}
+                onChange={(e) => setCustomCondition(e.target.value)}
+                style={{
+                  width: '100%',
+                  background: 'rgba(255, 255, 255, 0.03)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '10px',
+                  padding: '8px 12px',
+                  color: 'white',
+                  fontSize: '12px',
+                  outline: 'none',
+                  boxSizing: 'border-box'
+                }}
+              />
+            </div>
+
+            {/* Days of the week selection */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '12px' }}>
+              <label style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>Lịch tập luyện mong muốn trong tuần:</label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '4px', margin: '4px 0' }}>
+                {['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ Nhật'].map((day) => {
+                  const label = day === 'Chủ Nhật' ? 'CN' : day.replace('Thứ ', 'T');
+                  const isSelected = selectedDays.includes(day);
+                  return (
+                    <button
+                      key={day}
+                      type="button"
+                      onClick={() => {
+                        if (isSelected) {
+                          setSelectedDays(selectedDays.filter(d => d !== day));
+                        } else {
+                          setSelectedDays([...selectedDays, day]);
+                        }
+                      }}
+                      style={{
+                        flex: 1,
+                        height: '32px',
+                        borderRadius: '8px',
+                        border: isSelected ? '1px solid var(--accent-orange)' : '1px solid var(--border-color)',
+                        background: isSelected ? 'rgba(255, 87, 34, 0.15)' : 'rgba(255, 255, 255, 0.02)',
+                        color: isSelected ? 'var(--accent-orange)' : 'var(--text-secondary)',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        textAlign: 'center'
+                      }}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Multiple Workout Hours Section */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '12px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <label style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>Khung giờ tập luyện mong muốn hàng ngày:</label>
+                <button
+                  type="button"
+                  onClick={handleAddTimeSlot}
+                  style={{
+                    background: 'rgba(57, 255, 20, 0.15)',
+                    border: 'none',
+                    color: 'var(--accent-green)',
+                    padding: '2px 8px',
+                    borderRadius: '6px',
+                    fontSize: '10px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '2px'
+                  }}
+                >
+                  <Plus size={10} /> Thêm giờ
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {timeSlots.map((ts, idx) => (
+                  <div key={idx} style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                    <div style={{ position: 'relative', flex: 1 }}>
+                      <Clock size={14} color="var(--text-secondary)" style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)' }} />
+                      <input 
+                        type="time"
+                        value={ts}
+                        onChange={(e) => handleTimeSlotChange(idx, e.target.value)}
+                        style={{
+                          width: '100%',
+                          background: 'rgba(255, 255, 255, 0.03)',
+                          border: '1px solid var(--border-color)',
+                          borderRadius: '8px',
+                          padding: '6px 10px 6px 30px',
+                          color: 'white',
+                          fontSize: '12px',
+                          outline: 'none',
+                          boxSizing: 'border-box',
+                          colorScheme: 'dark'
+                        }}
+                      />
+                    </div>
+                    {timeSlots.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveTimeSlot(idx)}
+                        style={{
+                          background: 'rgba(255, 87, 34, 0.15)',
+                          border: 'none',
+                          color: 'var(--accent-orange)',
+                          padding: '6px',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
+                      >
+                        <X size={12} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <button 
+            onClick={handleSaveMedicalSurvey}
+            className="btn-primary"
+            style={{
+              width: '100%',
+              padding: '12px',
+              borderRadius: '12px',
+              fontWeight: 700,
+              fontSize: '13px',
+              background: 'var(--accent-orange)',
+              color: 'white',
+              cursor: 'pointer',
+              marginTop: '12px'
+            }}
+          >
+            Lưu khảo sát sức khỏe 🚀
+          </button>
+        </div>
+      )}
 
       {/* Floating/Bottom Action Timer & Disabled States */}
       {timerRunning ? (
@@ -1073,7 +1075,7 @@ export default function WorkoutPlanner({ onCompleteTask, onWorkoutComplete, isWo
         </div>
       ) : (
         /* Action buttons with validation rules */
-        <div style={{ marginTop: 'auto' }}>
+        <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {isWorkoutCompleted && isToday ? (
             /* Completed Today */
             <div className="glass-card" style={{
@@ -1095,15 +1097,49 @@ export default function WorkoutPlanner({ onCompleteTask, onWorkoutComplete, isWo
               padding: '12px'
             }}>
               <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                Chỉ có thể bắt đầu tập bài của ngày hôm nay (Thứ 4)
+                Chỉ có thể bắt đầu tập bài của ngày hôm nay ({getTodayString()})
+              </span>
+            </div>
+          ) : workoutState === 'skipped' ? (
+            /* Skipped Today */
+            <div className="glass-card" style={{
+              background: 'rgba(255, 87, 34, 0.05)',
+              borderColor: 'var(--accent-orange)',
+              textAlign: 'center',
+              padding: '12px'
+            }}>
+              <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--accent-orange)' }}>
+                Bạn đã báo bỏ buổi tập hôm nay! 🥗
               </span>
             </div>
           ) : (
             /* Can Start */
-            <button className="btn-primary btn-orange" onClick={startWorkout}>
-              <Play size={16} fill="black" />
-              Bắt đầu tập ngay
-            </button>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button 
+                onClick={handleSkipWorkout}
+                style={{
+                  flex: 1,
+                  background: 'rgba(255, 87, 34, 0.1)',
+                  border: '1px solid rgba(255, 87, 34, 0.3)',
+                  color: 'var(--accent-orange)',
+                  borderRadius: '12px',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  padding: '12px'
+                }}
+              >
+                Bỏ tập hôm nay
+              </button>
+              <button 
+                className="btn-primary btn-orange" 
+                onClick={startWorkout}
+                style={{ flex: 2 }}
+              >
+                <Play size={16} fill="black" />
+                Bắt đầu tập ngay
+              </button>
+            </div>
           )}
         </div>
       )}

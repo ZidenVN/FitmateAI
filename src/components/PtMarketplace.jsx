@@ -10,7 +10,8 @@ export default function PtMarketplace({ onOpenProfile, showToast, appointments, 
       exp: '3 năm kinh nghiệm',
       price: '300.000đ/buổi',
       spec: ['Calisthenics', 'Giảm cân nhanh', 'Sức bền'],
-      avatar: 'https://images.unsplash.com/photo-1548690312-e3b507d8c110?w=150&auto=format&fit=crop&q=60'
+      avatar: 'https://images.unsplash.com/photo-1548690312-e3b507d8c110?w=150&auto=format&fit=crop&q=60',
+      isVerified: true
     },
     {
       id: 2,
@@ -19,7 +20,8 @@ export default function PtMarketplace({ onOpenProfile, showToast, appointments, 
       exp: '1.5 năm kinh nghiệm',
       price: '250.000đ/buổi',
       spec: ['Tăng cơ', 'Dinh dưỡng chuyên sâu', 'Powerlifting'],
-      avatar: 'https://images.unsplash.com/photo-1567013127542-490d757e51fc?w=150&auto=format&fit=crop&q=60'
+      avatar: 'https://images.unsplash.com/photo-1567013127542-490d757e51fc?w=150&auto=format&fit=crop&q=60',
+      isVerified: true
     }
   ];
 
@@ -95,7 +97,8 @@ export default function PtMarketplace({ onOpenProfile, showToast, appointments, 
                 isPt: true,
                 spec: pt.spec,
                 exp: pt.exp,
-                price: pt.price
+                price: pt.price,
+                isVerified: pt.isVerified
               })}
             >
               <img 
@@ -111,7 +114,27 @@ export default function PtMarketplace({ onOpenProfile, showToast, appointments, 
               />
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <h4 style={{ fontSize: '14px', fontWeight: 700 }}>HLV {pt.name}</h4>
+                  <h4 style={{ fontSize: '14px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    HLV {pt.name}
+                    {pt.isVerified && (
+                      <span 
+                        title="HLV đã xác thực chuyên môn" 
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          background: '#2f80ed',
+                          borderRadius: '50%',
+                          width: '13px',
+                          height: '13px',
+                          color: 'white',
+                          padding: '1.5px'
+                        }}
+                      >
+                        <Check size={9} strokeWidth={4} />
+                      </span>
+                    )}
+                  </h4>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '2px', color: '#ffb300', fontSize: '12px', fontWeight: 700 }}>
                     <Star size={14} fill="#ffb300" stroke="none" />
                     {pt.rating}
