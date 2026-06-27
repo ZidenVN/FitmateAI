@@ -273,6 +273,23 @@ export default function App() {
       exp: '1.5 năm kinh nghiệm',
       price: '250.000đ/buổi',
       isVerified: true
+    },
+    'Phạm Tấn': {
+      name: 'Phạm Tấn',
+      role: 'Huấn luyện viên',
+      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=60',
+      bio: 'Hướng dẫn tập luyện cơ bản và chỉnh form chi tiết cho hội viên mới.',
+      phone: '0977254381',
+      birthday: '05/06/2000',
+      gender: 'Nam',
+      height: '176 cm',
+      weight: '72 kg',
+      isPt: true,
+      isSelf: false,
+      spec: ['Chỉnh sửa dáng tập', 'Tập cơ bản', 'Cardio'],
+      exp: '1 năm kinh nghiệm',
+      price: '200.000đ/buổi',
+      isVerified: true
     }
   };
 
@@ -615,7 +632,9 @@ export default function App() {
   const handleUpdateMyProfile = (updatedFields) => {
     const updated = { ...myProfile, ...updatedFields };
     setMyProfile(updated);
-    setSelectedProfile(updated);
+    if (selectedProfile) {
+      setSelectedProfile(updated);
+    }
   };
 
   const handleLogout = () => {

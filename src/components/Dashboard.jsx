@@ -973,17 +973,16 @@ export default function Dashboard({
           {/* Pricing cards */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {[
-              { name: 'Gói VIP 1 Tháng', price: '99.000đ', savings: null },
-              { name: 'Gói VIP 6 Tháng', price: '499.000đ', savings: 'Tiết kiệm 15%' },
-              { name: 'Gói VIP 12 Tháng', price: '799.000đ', savings: 'Tiết kiệm 30%' }
+              { name: 'Gói VIP 1 Tháng', price: '249.000đ', savings: null },
+              { name: 'Gói VIP 12 Tháng', price: '1.499.000đ', savings: 'Tiết kiệm 50%' }
             ].map((pkg, idx) => (
               <div key={idx} className="glass-card" style={{ 
                 display: 'flex', 
                 justifyContent: 'space-between', 
                 alignItems: 'center', 
                 padding: '14px', 
-                borderColor: idx === 2 ? '#ffd700' : 'rgba(255,255,255,0.1)',
-                background: idx === 2 ? 'rgba(255, 215, 0, 0.03)' : 'rgba(255,255,255,0.01)'
+                borderColor: idx === 1 ? '#ffd700' : 'rgba(255,255,255,0.1)',
+                background: idx === 1 ? 'rgba(255, 215, 0, 0.03)' : 'rgba(255,255,255,0.01)'
               }}>
                 <div>
                   <div style={{ fontSize: '13px', fontWeight: 700 }}>{pkg.name}</div>
@@ -1004,9 +1003,9 @@ export default function Dashboard({
                       setShowVipModal(false);
                     }}
                     style={{
-                      background: idx === 2 ? '#ffd700' : 'rgba(255,255,255,0.06)',
-                      border: idx === 2 ? 'none' : '1px solid var(--border-color)',
-                      color: idx === 2 ? 'var(--bg-dark)' : 'white',
+                      background: idx === 1 ? '#ffd700' : 'rgba(255,255,255,0.06)',
+                      border: idx === 1 ? 'none' : '1px solid var(--border-color)',
+                      color: idx === 1 ? 'var(--bg-dark)' : 'white',
                       fontSize: '10px',
                       fontWeight: 700,
                       padding: '4px 10px',

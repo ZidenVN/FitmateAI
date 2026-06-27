@@ -22,6 +22,16 @@ export default function PtMarketplace({ onOpenProfile, showToast, appointments, 
       spec: ['Tăng cơ', 'Dinh dưỡng chuyên sâu', 'Powerlifting'],
       avatar: 'https://images.unsplash.com/photo-1567013127542-490d757e51fc?w=150&auto=format&fit=crop&q=60',
       isVerified: true
+    },
+    {
+      id: 3,
+      name: 'Phạm Tấn',
+      rating: '4.7',
+      exp: '1 năm kinh nghiệm',
+      price: '200.000đ/buổi',
+      spec: ['Chỉnh sửa dáng tập', 'Tập cơ bản', 'Cardio'],
+      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=60',
+      isVerified: true
     }
   ];
 
