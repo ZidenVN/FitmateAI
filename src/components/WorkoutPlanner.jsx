@@ -25,6 +25,7 @@ export default function WorkoutPlanner({ onCompleteTask, onWorkoutComplete, isWo
   const [aiPrompt, setAiPrompt] = useState('');
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [adaptiveWorkouts, setAdaptiveWorkouts] = useState({});
+  const [medicalInsights, setMedicalInsights] = useState([]);
 
   // Lazy medical survey states
   const [showMedicalModal, setShowMedicalModal] = useState(false);
@@ -202,6 +203,185 @@ export default function WorkoutPlanner({ onCompleteTask, onWorkoutComplete, isWo
     { name: 'Dumbbell Bicep Curls (Cuốn bắp tay trước)', baseCalories: 45, sets: '3 sets x 12 reps', rest: '60s', tags: ['tay trước', 'tay', 'nhẹ', 'light', 'mệt mỏi'] }
   ];
 
+  const adaptExercisesForProfile = (exercisesList, profile) => {
+    if (!profile) return { adapted: exercisesList, insights: [] };
+
+    const insights = [];
+    const adapted = [];
+
+    // 1. BMI Calculation
+    const heightCm = parseFloat(profile.height) || 175;
+    const weightKg = parseFloat(profile.weight) || 70;
+    const heightM = heightCm / 100;
+    const bmi = weightKg / (heightM * heightM);
+
+    const isOverweight = bmi >= 25;
+    const isUnderweight = bmi < 18.5;
+
+    // 2. Extract medical conditions
+    const medical = (profile.medicalCondition || '').toLowerCase();
+    const hasSpineJoint = medical.includes('thoát vị') || medical.includes('đĩa đệm') || medical.includes('cột sống') || medical.includes('xương khớp') || medical.includes('khớp lưng');
+    const hasHeart = medical.includes('tim mạch') || medical.includes('huyết áp') || medical.includes('tim');
+    const hasKnee = medical.includes('khớp gối') || medical.includes('đầu gối') || medical.includes('chấn thương gối') || medical.includes('gối');
+    const hasWrist = medical.includes('cổ tay') || medical.includes('tay') || medical.includes('chấn thương cổ tay');
+
+    let addedBmiInsight = false;
+    let addedSpineInsight = false;
+    let addedHeartInsight = false;
+    let addedKneeInsight = false;
+    let addedWristInsight = false;
+
+    exercisesList.forEach(ex => {
+      let currentEx = { ...ex };
+      let swapped = false;
+
+      // Rule 2.1: Spine / Disc Herniation
+      if (hasSpineJoint) {
+        const lowerName = currentEx.name.toLowerCase();
+        const unsafeKeywords = ['squat', 'deadlift', 'overhead press', 'gập người chèo tạ', 'chèo thanh t'];
+        const isUnsafe = unsafeKeywords.some(kw => lowerName.includes(kw));
+
+        if (isUnsafe) {
+          let substitute = null;
+          if (lowerName.includes('squat') || lowerName.includes('deadlift')) {
+            substitute = exercisePool.find(p => p.name.includes('Leg Extensions') || p.name.includes('Glute Bridges'));
+          } else {
+            substitute = exercisePool.find(p => p.name.includes('Seated Cable Row') || p.name.includes('Face Pulls'));
+          }
+
+          if (substitute) {
+            currentEx.name = substitute.name;
+            currentEx.sets = substitute.sets;
+            currentEx.rest = substitute.rest;
+            currentEx.calories = substitute.baseCalories;
+            swapped = true;
+            if (!addedSpineInsight) {
+              insights.push("🛡️ Phát hiện bệnh lý cột sống/xương khớp: AI đã loại bỏ các bài tập gánh dọc cột sống (Squat/Deadlift) và thay thế bằng các bài tập máy/cầu mông cô lập an toàn hơn.");
+              addedSpineInsight = true;
+            }
+          }
+        }
+      }
+
+      // Rule 2.2: Knee Injury or High BMI (Overweight)
+      if (hasKnee || (isOverweight && !swapped)) {
+        const lowerName = currentEx.name.toLowerCase();
+        const unsafeKneeKeywords = ['jump squat', 'box jump', 'bulgarian split squat', 'lunges', 'stair climber', 'chùng chân', 'bật nhảy'];
+        const isUnsafeKnee = unsafeKneeKeywords.some(kw => lowerName.includes(kw));
+
+        if (isUnsafeKnee) {
+          let substitute = exercisePool.find(p => p.name.includes('Elliptical Slow Pace') || p.name.includes('Stationary Cycling') || p.name.includes('Leg Extensions'));
+          if (substitute) {
+            currentEx.name = substitute.name;
+            currentEx.sets = substitute.sets;
+            currentEx.rest = substitute.rest;
+            currentEx.calories = substitute.baseCalories;
+            swapped = true;
+            if (hasKnee && !addedKneeInsight) {
+              insights.push("🦵 Phát hiện chấn thương đầu gối: AI hạn chế tối đa các bài tập gập gối sâu/bật nhảy và đề xuất các bài tập liên hoàn hoặc đạp đùi nhẹ nhàng.");
+              addedKneeInsight = true;
+            } else if (isOverweight && !addedBmiInsight) {
+              insights.push("🚶‍♂️ Chỉ số BMI của bạn cao (Thừa cân): AI đề xuất các bài tập cardio ít chấn động khớp gối (như xe đạp, elliptical).");
+              addedBmiInsight = true;
+            }
+          }
+        }
+      }
+
+      // Rule 2.3: Wrist / Arm Injury
+      if (hasWrist && !swapped) {
+        const lowerName = currentEx.name.toLowerCase();
+        const unsafeWristKeywords = ['push-ups', 'hít đất', 'dips', 'pull-ups', 'xà đơn', 'swings', 'row', 'chèo tạ', 'curls', 'bắp tay'];
+        const isUnsafeWrist = unsafeWristKeywords.some(kw => lowerName.includes(kw));
+
+        if (isUnsafeWrist) {
+          let substitute = exercisePool.find(p => p.name.includes('Glute Bridges') || p.name.includes('Lying Leg Raises') || p.name.includes('Dead Bug'));
+          if (substitute) {
+            currentEx.name = substitute.name;
+            currentEx.sets = substitute.sets;
+            currentEx.rest = substitute.rest;
+            currentEx.calories = substitute.baseCalories;
+            swapped = true;
+            if (!addedWristInsight) {
+              insights.push("🩹 Phát hiện chấn thương cổ tay/tay: AI giảm tì lực lên cổ tay, hạn chế hít đất/kéo tạ nặng và bổ sung các bài tập bụng/chân không dùng tay.");
+              addedWristInsight = true;
+            }
+          }
+        }
+      }
+
+      // Rule 2.4: Cardiovascular / Hypertension (Adjust Rest and Calories)
+      if (hasHeart) {
+        if (currentEx.rest.includes('60s')) {
+          currentEx.rest = '90s (Phục hồi)';
+        } else if (currentEx.rest.includes('90s')) {
+          currentEx.rest = '120s (Phục hồi)';
+        } else if (currentEx.rest.toLowerCase().includes('cường độ cao')) {
+          currentEx.rest = '90s';
+        }
+        currentEx.calories = Math.max(Math.round(currentEx.calories * 0.85), 15);
+
+        if (!addedHeartInsight) {
+          insights.push("🫀 Phát hiện tiền sử tim mạch/huyết áp: AI tự động kéo dài thời gian nghỉ ngơi giữa các hiệp và giảm 15% calo mục tiêu mỗi bài tập để kiểm soát nhịp tim.");
+          addedHeartInsight = true;
+        }
+      }
+
+      // Rule 1.2: Underweight BMI adjustment
+      if (isUnderweight && !hasHeart) {
+        if (currentEx.sets.includes('reps')) {
+          currentEx.sets = currentEx.sets.replace(/(\d+)\s*reps/, (match, reps) => `${Math.max(parseInt(reps) - 2, 6)} reps (Tăng cơ)`);
+        }
+        if (currentEx.name.toLowerCase().includes('cardio') || currentEx.name.toLowerCase().includes('cycling') || currentEx.name.toLowerCase().includes('elliptical')) {
+          currentEx.calories = Math.max(Math.round(currentEx.calories * 0.9), 20);
+        }
+        if (!addedBmiInsight) {
+          insights.push("💪 Chỉ số BMI thấp (Nhẹ cân): AI tối ưu hóa số rep thấp hơn để hỗ trợ xây dựng cơ bắp (Hypertrophy) hiệu quả nhất.");
+          addedBmiInsight = true;
+        }
+      }
+
+      adapted.push(currentEx);
+    });
+
+    return { adapted, insights };
+  };
+
+  // Adapt all default workouts when myProfile changes
+  useEffect(() => {
+    if (myProfile) {
+      setWorkouts(prev => {
+        const updated = {};
+        let changed = false;
+        Object.keys(prev).forEach(day => {
+          const list = prev[day];
+          if (!list || list.length === 0) return;
+          const { adapted } = adaptExercisesForProfile(list, myProfile);
+          if (JSON.stringify(list) !== JSON.stringify(adapted)) {
+            updated[day] = adapted;
+            changed = true;
+          } else {
+            updated[day] = list;
+          }
+        });
+        if (changed) {
+          return { ...prev, ...updated };
+        }
+        return prev;
+      });
+    }
+  }, [myProfile]);
+
+  // Compute dynamic medical insights for the active screen/day
+  useEffect(() => {
+    if (myProfile) {
+      const key = timeSlots.length > 1 ? `${selectedDay}_${activeTimeSlot}` : selectedDay;
+      const currentList = workouts[key] || workouts[selectedDay] || [];
+      const { insights } = adaptExercisesForProfile(currentList, myProfile);
+      setMedicalInsights(insights);
+    }
+  }, [selectedDay, activeTimeSlot, myProfile, workouts, timeSlots]);
+
   // Dynamically suggest AI alternatives based on target calories (+/- 5 to 10 kcal)
   const getAiAlternatives = (targetEx) => {
     const targetCalories = targetEx.calories || 60;
@@ -377,7 +557,9 @@ export default function WorkoutPlanner({ onCompleteTask, onWorkoutComplete, isWo
         };
       });
 
-      updateCurrentWorkouts(newExercises);
+      const { adapted, insights } = adaptExercisesForProfile(newExercises, myProfile);
+      setMedicalInsights(insights);
+      updateCurrentWorkouts(adapted);
       setIsAutoPlanning(false);
       setToastMessage("AI đã tự động thiết lập lại lịch tập tối ưu! ⚡");
       setTimeout(() => setToastMessage(""), 3000);
@@ -504,10 +686,9 @@ export default function WorkoutPlanner({ onCompleteTask, onWorkoutComplete, isWo
         setToastMessage(`AI Adaptive: Đã lên lịch ${finalSelected.length} bài tập phù hợp! 🎯`);
       }
 
-      setAdaptiveWorkouts(prev => ({
-        ...prev,
-        [selectedDay]: finalSelected
-      }));
+      const { adapted, insights } = adaptExercisesForProfile(finalSelected, myProfile);
+      setMedicalInsights(insights);
+      updateCurrentWorkouts(adapted);
 
       setIsAutoPlanning(false);
       setTimeout(() => setToastMessage(""), 3500);
@@ -657,6 +838,31 @@ export default function WorkoutPlanner({ onCompleteTask, onWorkoutComplete, isWo
             >
               AI Thích ứng
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* AI Health Insight Banner */}
+      {medicalInsights && medicalInsights.length > 0 && (
+        <div className="glass-card animate-slide-up" style={{
+          marginTop: '12px',
+          padding: '12px 14px',
+          background: 'rgba(255, 87, 34, 0.05)',
+          border: '1px solid rgba(255, 87, 34, 0.2)',
+          borderRadius: '12px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--accent-orange)', fontWeight: 700, fontSize: '12px' }}>
+            <span>✨ AI Health Insight</span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            {medicalInsights.map((insight, idx) => (
+              <div key={idx} style={{ fontSize: '11px', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
+                {insight}
+              </div>
+            ))}
           </div>
         </div>
       )}
