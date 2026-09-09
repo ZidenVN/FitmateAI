@@ -189,6 +189,25 @@ export default function App() {
     }
   }, [appToast]);
 
+  useEffect(() => {
+    const userId = localStorage.getItem('fitmate_user_id');
+    if (userId) {
+      fetch(`http://localhost:8080/api/user/profile/${userId}`)
+        .then(res => res.ok ? res.json() : null)
+        .then(data => {
+          if (data) {
+            setMyProfile(prev => ({
+              ...prev,
+              ...data,
+              name: data.name.includes('(Bạn)') ? data.name : data.name + ' (Bạn)',
+              role: data.role
+            }));
+          }
+        })
+        .catch(err => console.warn("Failed to auto-fetch profile from BE:", err));
+    }
+  }, []);
+
   const [myProfile, setMyProfile] = useState(() => {
     const savedDb = localStorage.getItem('fitmate_users');
     const db = savedDb ? JSON.parse(savedDb) : DEFAULT_USERS;

@@ -29,7 +29,7 @@ export default function Auth({ onLoginSuccess, onRegisterSuccess, usersDb }) {
   const [onboardingStep, setOnboardingStep] = useState(1);
   const [selectedDays, setSelectedDays] = useState(['Thứ 2', 'Thứ 4', 'Thứ 6']);
 
-  const handleLoginSubmit = (e) => {
+  const handleLoginSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
@@ -43,36 +43,61 @@ export default function Auth({ onLoginSuccess, onRegisterSuccess, usersDb }) {
       return;
     }
 
-    const db = usersDb || {};
-    const user = db[email];
+    try {
+      const response = await fetch('http://localhost:8080/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
 
-    if (user) {
-      if (user.password === password) {
-        onLoginSuccess({
-          email: user.email,
-          ...user.profile
-        });
-      } else {
-        setError('Mật khẩu không chính xác! ⚠️');
+      if (!response.ok) {
+        const errorText = await response.text();
+        setError(errorText || 'Mật khẩu không chính xác hoặc tài khoản không tồn tại! ⚠️');
+        return;
       }
-    } else {
-      setError('Tài khoản không tồn tại! Vui lòng chuyển sang tab Đăng ký để tạo tài khoản mới. ⚠️');
+
+      const data = await response.json();
+      localStorage.setItem('fitmate_token', data.token);
+      localStorage.setItem('fitmate_user_id', data.userId);
+
+      let profileData = {
+        name: data.name + ' (Bạn)',
+        role: data.role === 'PT' ? 'Huấn luyện viên' : 'Hội viên',
+        email: data.email,
+        isPt: data.role === 'PT',
+        isSelf: true
+      };
+
+      try {
+        const profRes = await fetch(`http://localhost:8080/api/user/profile/${data.userId}`);
+        if (profRes.ok) {
+          const profJson = await profRes.json();
+          profileData = { ...profileData, ...profJson };
+        }
+      } catch (profErr) {
+        console.warn("Using basic profile data from auth response:", profErr);
+      }
+
+      onLoginSuccess(profileData);
+    } catch (err) {
+      console.warn("Backend unavailable, fallback to local DB:", err);
+      const db = usersDb || {};
+      const user = db[email];
+      if (user && user.password === password) {
+        onLoginSuccess({ email: user.email, ...user.profile });
+      } else {
+        setError('Không kết nối được Backend hoặc thông tin đăng nhập không đúng! ⚠️');
+      }
     }
   };
 
-  const handleRegisterSubmit = (e) => {
+  const handleRegisterSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
     if (role === 'pt') {
       if (!name || !email || !password || !confirmPassword || !ptSpec || !ptExp || !ptPrice || !ptCerts || !birthday) {
         setError('Vui lòng điền đầy đủ tất cả các trường cho Huấn luyện viên! ⚠️');
-        return;
-      }
-
-      const db = usersDb || {};
-      if (db[email]) {
-        setError('Email này đã được đăng ký! Vui lòng dùng email khác. ⚠️');
         return;
       }
 
@@ -86,38 +111,63 @@ export default function Auth({ onLoginSuccess, onRegisterSuccess, usersDb }) {
         return;
       }
 
-      const formattedBirthday = birthday.includes('-') 
-        ? birthday.split('-').reverse().join('/') 
-        : birthday;
+      try {
+        const response = await fetch('http://localhost:8080/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email,
+            password,
+            name,
+            role: 'pt',
+            birthday,
+            ptSpec,
+            ptExp,
+            ptPrice: parseFloat(ptPrice) || 300000,
+            ptCerts
+          })
+        });
 
-      onRegisterSuccess({
-        name,
-        email,
-        password,
-        phone: '09' + Math.floor(10000000 + Math.random() * 90000000),
-        birthday: formattedBirthday,
-        gender,
-        isPt: true,
-        spec: ptSpec.split(',').map(s => s.trim()),
-        exp: ptExp.includes('kinh nghiệm') ? ptExp : `${ptExp} năm kinh nghiệm`,
-        price: ptPrice.includes('đ/buổi') ? ptPrice : `${ptPrice}đ/buổi`,
-        certificates: ptCerts,
-        medicalCondition: 'Không có',
-        allergies: 'Không có',
-        trainingDays: ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'],
-        trainingTimes: ['08:00']
-      });
+        if (!response.ok) {
+          const errorMsg = await response.text();
+          setError(errorMsg || 'Email này đã được đăng ký! Vui lòng dùng email khác. ⚠️');
+          return;
+        }
+
+        const data = await response.json();
+        localStorage.setItem('fitmate_token', data.token);
+        localStorage.setItem('fitmate_user_id', data.userId);
+
+        const formattedBirthday = birthday.includes('-') 
+          ? birthday.split('-').reverse().join('/') 
+          : birthday;
+
+        onRegisterSuccess({
+          name,
+          email,
+          password,
+          phone: '09' + Math.floor(10000000 + Math.random() * 90000000),
+          birthday: formattedBirthday,
+          gender,
+          isPt: true,
+          spec: ptSpec.split(',').map(s => s.trim()),
+          exp: ptExp.includes('kinh nghiệm') ? ptExp : `${ptExp} năm kinh nghiệm`,
+          price: ptPrice.includes('đ/buổi') ? ptPrice : `${ptPrice}đ/buổi`,
+          certificates: ptCerts,
+          medicalCondition: 'Không có',
+          allergies: 'Không có',
+          trainingDays: ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'],
+          trainingTimes: ['08:00']
+        });
+      } catch (err) {
+        console.error("Backend PT register error:", err);
+        setError('Không thể kết nối đến Backend Server! ⚠️');
+      }
       return;
     }
 
     if (!name || !email || !password || !confirmPassword || !height || !weight || !goal || !birthday) {
       setError('Vui lòng điền đầy đủ tất cả các trường! ⚠️');
-      return;
-    }
-
-    const db = usersDb || {};
-    if (db[email]) {
-      setError('Email này đã được đăng ký! Vui lòng dùng email khác. ⚠️');
       return;
     }
 
@@ -135,28 +185,60 @@ export default function Auth({ onLoginSuccess, onRegisterSuccess, usersDb }) {
     setOnboardingStep(2);
   };
 
-  const handleOnboardingSubmit = (e) => {
+  const handleOnboardingSubmit = async (e) => {
     e.preventDefault();
 
-    const formattedBirthday = birthday.includes('-') 
-      ? birthday.split('-').reverse().join('/') 
-      : birthday;
+    try {
+      const response = await fetch('http://localhost:8080/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          password,
+          name,
+          role: 'user',
+          height: parseFloat(height) || 175,
+          weight: parseFloat(weight) || 70,
+          gender,
+          birthday,
+          goal,
+          selectedDays: JSON.stringify(selectedDays)
+        })
+      });
 
-    onRegisterSuccess({
-      name,
-      email,
-      password,
-      phone: '09' + Math.floor(10000000 + Math.random() * 90000000),
-      birthday: formattedBirthday,
-      gender,
-      height: height.includes('cm') ? height : `${height} cm`,
-      weight: weight.includes('kg') ? weight : `${weight} kg`,
-      goal,
-      medicalCondition: 'Không có',
-      allergies: 'Không có',
-      trainingDays: selectedDays.length > 0 ? selectedDays : ['Thứ 2', 'Thứ 4', 'Thứ 6'],
-      trainingTimes: ['18:00']
-    });
+      if (!response.ok) {
+        const errorMsg = await response.text();
+        setError(errorMsg || 'Email này đã được đăng ký! Vui lòng dùng email khác. ⚠️');
+        return;
+      }
+
+      const data = await response.json();
+      localStorage.setItem('fitmate_token', data.token);
+      localStorage.setItem('fitmate_user_id', data.userId);
+
+      const formattedBirthday = birthday.includes('-') 
+        ? birthday.split('-').reverse().join('/') 
+        : birthday;
+
+      onRegisterSuccess({
+        name,
+        email,
+        password,
+        phone: '09' + Math.floor(10000000 + Math.random() * 90000000),
+        birthday: formattedBirthday,
+        gender,
+        height: height.includes('cm') ? height : `${height} cm`,
+        weight: weight.includes('kg') ? weight : `${weight} kg`,
+        goal,
+        medicalCondition: 'Không có',
+        allergies: 'Không có',
+        trainingDays: selectedDays.length > 0 ? selectedDays : ['Thứ 2', 'Thứ 4', 'Thứ 6'],
+        trainingTimes: ['18:00']
+      });
+    } catch (err) {
+      console.error("Backend User register error:", err);
+      setError('Không kết nối được với Backend Server! ⚠️');
+    }
   };
 
   return (
