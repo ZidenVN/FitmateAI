@@ -548,48 +548,84 @@ export default function Dashboard({
         ) : (
           /* Standard Quick Access cards */
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-            <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '8px', cursor: 'pointer' }} onClick={() => setScreen('nutrition')}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ padding: '6px', borderRadius: '10px', background: 'rgba(57, 255, 20, 0.1)', color: 'var(--accent-green)' }}>
-                  <Zap size={16} />
-                </div>
-                <ArrowUpRight size={14} color="var(--text-secondary)" />
-              </div>
-              <span style={{ fontSize: '13px', fontWeight: 700 }}>Quét Bữa Ăn</span>
-              <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>AI Scan Calo qua ảnh</span>
+            <div 
+              className="glass-card" 
+              style={{ 
+                display: 'flex', 
+                flexDirection: 'column', 
+                justifyContent: 'center',
+                gap: '6px', 
+                padding: '16px 14px',
+                borderRadius: '16px',
+                background: 'linear-gradient(135deg, rgba(57, 255, 20, 0.15) 0%, rgba(16, 36, 20, 0.7) 100%)',
+                border: '1px solid rgba(57, 255, 20, 0.35)',
+                boxShadow: '0 4px 15px rgba(57, 255, 20, 0.08)',
+                cursor: 'pointer'
+              }} 
+              onClick={() => setScreen('nutrition')}
+            >
+              <span style={{ fontSize: '14px', fontWeight: 800, color: '#39ff14' }}>Quét Bữa Ăn</span>
+              <span style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.75)', lineHeight: '1.3' }}>AI Scan Calo qua ảnh</span>
             </div>
 
-            <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '8px', cursor: 'pointer' }} onClick={() => setScreen('workout')}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ padding: '6px', borderRadius: '10px', background: 'rgba(255, 87, 34, 0.1)', color: 'var(--accent-orange)' }}>
-                  <TrendingUp size={16} />
-                </div>
-                <ArrowUpRight size={14} color="var(--text-secondary)" />
-              </div>
-              <span style={{ fontSize: '13px', fontWeight: 700 }}>Lịch Luyện Tập</span>
-              <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>Kế hoạch AI thích ứng</span>
+            <div 
+              className="glass-card" 
+              style={{ 
+                display: 'flex', 
+                flexDirection: 'column', 
+                justifyContent: 'center',
+                gap: '6px', 
+                padding: '16px 14px',
+                borderRadius: '16px',
+                background: 'linear-gradient(135deg, rgba(255, 87, 34, 0.15) 0%, rgba(45, 20, 12, 0.7) 100%)',
+                border: '1px solid rgba(255, 87, 34, 0.35)',
+                boxShadow: '0 4px 15px rgba(255, 87, 34, 0.08)',
+                cursor: 'pointer'
+              }} 
+              onClick={() => setScreen('workout')}
+            >
+              <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--accent-orange)' }}>Lịch Luyện Tập</span>
+              <span style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.75)', lineHeight: '1.3' }}>Kế hoạch AI thích ứng</span>
             </div>
 
-            <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '8px', cursor: 'pointer' }} onClick={() => setScreen('marketplace')}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ padding: '6px', borderRadius: '10px', background: 'rgba(47, 128, 237, 0.1)', color: '#2f80ed' }}>
-                  <Calendar size={16} />
-                </div>
-                <ArrowUpRight size={14} color="var(--text-secondary)" />
-              </div>
-              <span style={{ fontSize: '13px', fontWeight: 700 }}>Đặt Lịch PT</span>
-              <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>Thuê PT huấn luyện</span>
+            <div 
+              className="glass-card" 
+              style={{ 
+                display: 'flex', 
+                flexDirection: 'column', 
+                justifyContent: 'center',
+                gap: '6px', 
+                padding: '16px 14px',
+                borderRadius: '16px',
+                background: 'linear-gradient(135deg, rgba(47, 128, 237, 0.15) 0%, rgba(12, 28, 50, 0.7) 100%)',
+                border: '1px solid rgba(47, 128, 237, 0.35)',
+                boxShadow: '0 4px 15px rgba(47, 128, 237, 0.08)',
+                cursor: 'pointer'
+              }} 
+              onClick={() => setScreen('marketplace')}
+            >
+              <span style={{ fontSize: '14px', fontWeight: 800, color: '#2f80ed' }}>Đặt Lịch PT</span>
+              <span style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.75)', lineHeight: '1.3' }}>Thuê PT huấn luyện</span>
             </div>
 
-            <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '8px', cursor: 'pointer' }} onClick={() => setScreen('chuyen-sau')}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ padding: '6px', borderRadius: '10px', background: 'rgba(155, 81, 224, 0.1)', color: '#9b51e0' }}>
-                  <HeartPulse size={16} />
-                </div>
-                <ArrowUpRight size={14} color="var(--text-secondary)" />
-              </div>
-              <span style={{ fontSize: '13px', fontWeight: 700 }}>Chuyên Sâu</span>
-              <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>Y tế, dị ứng & lịch hoạt động</span>
+            <div 
+              className="glass-card" 
+              style={{ 
+                display: 'flex', 
+                flexDirection: 'column', 
+                justifyContent: 'center',
+                gap: '6px', 
+                padding: '16px 14px',
+                borderRadius: '16px',
+                background: 'linear-gradient(135deg, rgba(155, 81, 224, 0.15) 0%, rgba(32, 16, 48, 0.7) 100%)',
+                border: '1px solid rgba(155, 81, 224, 0.35)',
+                boxShadow: '0 4px 15px rgba(155, 81, 224, 0.08)',
+                cursor: 'pointer'
+              }} 
+              onClick={() => setScreen('chuyen-sau')}
+            >
+              <span style={{ fontSize: '14px', fontWeight: 800, color: '#b366ff' }}>Chuyên Sâu</span>
+              <span style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.75)', lineHeight: '1.3' }}>Y tế, dị ứng & lịch hoạt động</span>
             </div>
           </div>
         )}
@@ -758,15 +794,12 @@ export default function Dashboard({
             /* Voucher Grid */
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', overflowY: 'auto', flex: 1, paddingBottom: '20px' }}>
               {[
-                { id: 1, title: 'California Fitness Gym', desc: 'Giảm 50% gói tập thử 1 tháng', cost: 150, code: 'CALI50FM', logo: '🔴' },
-                { id: 2, title: 'Elite Fitness Center', desc: '7 ngày tập thử miễn phí toàn hệ thống', cost: 200, code: 'ELITE7FM', logo: '🔵' },
-                { id: 3, title: 'HLV Mai Xuân Tú', desc: 'Voucher giảm 100k tập kèm PT 1-1', cost: 100, code: 'HLVTU100K', logo: '🏋️‍♂️' },
-                { id: 4, title: 'Gymshark Việt Nam', desc: 'Giảm 20% phụ kiện & đồ thể thao', cost: 150, code: 'SHARK20', logo: '🦈' }
+                { id: 1, title: 'California Fitness Gym', desc: 'Giảm 50% gói tập thử 1 tháng', cost: 150, code: 'CALI50FM', color: '#eb5757' },
+                { id: 2, title: 'Elite Fitness Center', desc: '7 ngày tập thử miễn phí toàn hệ thống', cost: 200, code: 'ELITE7FM', color: '#2f80ed' },
+                { id: 3, title: 'HLV Mai Xuân Tú', desc: 'Voucher giảm 100k tập kèm PT 1-1', cost: 100, code: 'HLVTU100K', color: '#f2994a' },
+                { id: 4, title: 'Gymshark Việt Nam', desc: 'Giảm 20% phụ kiện & đồ thể thao', cost: 150, code: 'SHARK20', color: '#39ff14' }
               ].map(voucher => (
-                <div key={voucher.id} className="glass-card" style={{ display: 'flex', gap: '12px', alignItems: 'center', padding: '12px', borderColor: 'rgba(255, 215, 0, 0.15)' }}>
-                  <div style={{ fontSize: '24px', background: 'rgba(255,255,255,0.03)', width: '44px', height: '44px', borderRadius: '10px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                    {voucher.logo}
-                  </div>
+                <div key={voucher.id} className="glass-card" style={{ display: 'flex', gap: '12px', alignItems: 'center', padding: '12px', borderColor: `${voucher.color}55`, background: `${voucher.color}0d` }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: '12.5px', fontWeight: 700 }}>{voucher.title}</div>
                     <div style={{ fontSize: '10px', color: 'var(--text-secondary)', marginTop: '2px' }}>{voucher.desc}</div>
@@ -1154,23 +1187,6 @@ export default function Dashboard({
               }}
             >
               <Mail size={16} /> Gửi email phản hồi
-            </button>
-
-            <button 
-              onClick={() => setShowSupportModal(false)}
-              style={{
-                width: '100%',
-                padding: '12px',
-                borderRadius: '12px',
-                fontWeight: 700,
-                fontSize: '13px',
-                background: 'rgba(255,255,255,0.03)',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
-                color: 'white',
-                cursor: 'pointer'
-              }}
-            >
-              Đóng cửa sổ
             </button>
           </div>
         </div>

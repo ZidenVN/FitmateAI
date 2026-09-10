@@ -203,7 +203,6 @@ export default function NutritionVision({ onAddCalories, onCompleteTask, dietSta
       {/* Title */}
       <div>
         <h2 className="title-large" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Sparkles color="var(--accent-green)" size={22} />
           AI Nutrition Vision
         </h2>
       </div>
@@ -236,7 +235,7 @@ export default function NutritionVision({ onAddCalories, onCompleteTask, dietSta
             gap: '5px'
           }}
         >
-          📷 Quét Món
+          Quét Món
         </button>
         <button
           onClick={() => setActiveTab('plan')}
@@ -257,7 +256,7 @@ export default function NutritionVision({ onAddCalories, onCompleteTask, dietSta
             gap: '5px'
           }}
         >
-          🗓️ AI Thực Đơn
+          AI Thực Đơn
         </button>
       </div>
 
@@ -670,18 +669,7 @@ export default function NutritionVision({ onAddCalories, onCompleteTask, dietSta
         </div>
       </div>
 
-      {/* AI Knowledge Base Citations Section */}
-      <div className="glass-card" style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', background: 'rgba(255,255,255,0.01)', borderColor: 'rgba(255,255,255,0.05)' }}>
-        <h5 style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-          <BookOpen size={12} color="var(--accent-green)" /> Cơ Sở Tri Thức Y Khoa & Dinh Dưỡng
-        </h5>
-        <p style={{ fontSize: '9px', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
-          Các gợi ý dinh dưỡng của FitMate được tham chiếu nghiêm ngặt từ CSDL quốc gia và quốc tế, bao gồm:
-          <br />• <strong>Viện Dinh dưỡng Quốc gia Việt Nam (NIN)</strong> - Bảng thành phần thực phẩm VN.
-          <br />• <strong>Thư viện Y khoa Quốc gia Hoa Kỳ (NCBI / PubMed)</strong> - Các nghiên cứu chuyên sâu về dị ứng.
-          <br />• <strong>Tổ chức Y tế Thế giới (WHO)</strong> - Hướng dẫn định mức năng lượng toàn cầu.
-        </p>
-      </div>
+
 
       {/* Lazy Allergy Survey Modal */}
       {showAllergyModal && (
@@ -698,7 +686,6 @@ export default function NutritionVision({ onAddCalories, onCompleteTask, dietSta
           overflowY: 'auto'
         }}>
           <div style={{ textAlign: 'center', marginBottom: '8px' }}>
-            <div style={{ fontSize: '24px', marginBottom: '6px' }}>🛡️</div>
             <h4 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--accent-orange)' }}>Khảo Sát Dị Ứng Thực Phẩm</h4>
             <p className="subtitle" style={{ fontSize: '10.5px', marginTop: '2px' }}>AI của FitMate sẽ loại bỏ món ăn gây hại khỏi lịch trình của bạn</p>
           </div>

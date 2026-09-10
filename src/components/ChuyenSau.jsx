@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, HeartPulse, ShieldAlert, Clock, Calendar, Check, Edit3, Save, Plus, X } from 'lucide-react';
+import { ArrowLeft, Check, Edit3, Save, Plus, X } from 'lucide-react';
 
 export default function ChuyenSau({ myProfile, onUpdateProfile, onClose, showToast }) {
   const [isEditing, setIsEditing] = useState(false);
@@ -86,10 +86,7 @@ export default function ChuyenSau({ myProfile, onUpdateProfile, onClose, showToa
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             
             {/* Medical Condition Block */}
-            <div className="glass-card" style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <div style={{ padding: '8px', borderRadius: '10px', background: 'rgba(235, 87, 87, 0.1)', color: '#eb5757', flexShrink: 0 }}>
-                <HeartPulse size={20} />
-              </div>
+            <div className="glass-card" style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', borderColor: 'rgba(235, 87, 87, 0.4)', background: 'rgba(235, 87, 87, 0.07)' }}>
               <div style={{ flex: 1 }}>
                 <h5 style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 600 }}>Bệnh lý nền / Chấn thương</h5>
                 <p style={{ fontSize: '13.5px', fontWeight: 700, color: 'white', marginTop: '4px', lineHeight: '1.4' }}>
@@ -99,10 +96,7 @@ export default function ChuyenSau({ myProfile, onUpdateProfile, onClose, showToa
             </div>
 
             {/* Allergies Block */}
-            <div className="glass-card" style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <div style={{ padding: '8px', borderRadius: '10px', background: 'rgba(242, 153, 74, 0.1)', color: '#f2994a', flexShrink: 0 }}>
-                <ShieldAlert size={20} />
-              </div>
+            <div className="glass-card" style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', borderColor: 'rgba(242, 153, 74, 0.4)', background: 'rgba(242, 153, 74, 0.07)' }}>
               <div style={{ flex: 1 }}>
                 <h5 style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 600 }}>Dị ứng thức ăn / kích thích</h5>
                 <p style={{ fontSize: '13.5px', fontWeight: 700, color: 'white', marginTop: '4px', lineHeight: '1.4' }}>
@@ -112,10 +106,7 @@ export default function ChuyenSau({ myProfile, onUpdateProfile, onClose, showToa
             </div>
 
             {/* Training Days Block */}
-            <div className="glass-card" style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <div style={{ padding: '8px', borderRadius: '10px', background: 'rgba(57, 255, 20, 0.1)', color: 'var(--accent-green)', flexShrink: 0 }}>
-                <Calendar size={20} />
-              </div>
+            <div className="glass-card" style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', borderColor: 'rgba(57, 255, 20, 0.35)', background: 'rgba(57, 255, 20, 0.06)' }}>
               <div style={{ flex: 1 }}>
                 <h5 style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 600 }}>Lịch tập luyện trong tuần</h5>
                 <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '6px' }}>
@@ -140,10 +131,7 @@ export default function ChuyenSau({ myProfile, onUpdateProfile, onClose, showToa
             </div>
 
             {/* Training Time Block */}
-            <div className="glass-card" style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-              <div style={{ padding: '8px', borderRadius: '10px', background: 'rgba(47, 128, 237, 0.1)', color: '#2f80ed', flexShrink: 0 }}>
-                <Clock size={20} />
-              </div>
+            <div className="glass-card" style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', borderColor: 'rgba(47, 128, 237, 0.4)', background: 'rgba(47, 128, 237, 0.07)' }}>
               <div style={{ flex: 1 }}>
                 <h5 style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 600 }}>Khung giờ tập hàng ngày</h5>
                 <p style={{ fontSize: '14px', fontWeight: 800, color: 'white', marginTop: '4px' }}>

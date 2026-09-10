@@ -706,7 +706,7 @@ export default function WorkoutPlanner({ onCompleteTask, onWorkoutComplete, isWo
   const canStart = isToday && !isWorkoutCompleted;
 
   return (
-    <div className="screen-content animate-slide-up" style={{ position: 'relative', paddingBottom: '80px', display: 'flex', flexDirection: 'column', height: '100%', overflowY: 'auto' }}>
+    <div className="screen-content animate-slide-up" style={{ position: 'relative', paddingBottom: '80px', display: 'flex', flexDirection: 'column', height: '100%', overflowY: showMedicalModal ? 'hidden' : 'auto' }}>
       
       {/* Inline Toast Banner */}
       {toastMessage && (
@@ -733,7 +733,6 @@ export default function WorkoutPlanner({ onCompleteTask, onWorkoutComplete, isWo
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
           <h2 className="title-large" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Sparkles color="var(--accent-orange)" size={22} />
             Luyện Tập Thích Ứng
           </h2>
           <p className="subtitle">Lập giáo án AI linh hoạt theo mục tiêu & thể trạng</p>
@@ -991,18 +990,7 @@ export default function WorkoutPlanner({ onCompleteTask, onWorkoutComplete, isWo
         </div>
       </div>
 
-      {/* AI Medical citations for workout planner */}
-      <div className="glass-card" style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '6px', padding: '12px', background: 'rgba(255,255,255,0.01)', borderColor: 'rgba(255,255,255,0.05)' }}>
-        <h5 style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-          📚 Nguồn Tham Chiếu Khoa Học & Y Học Thể Thao
-        </h5>
-        <p style={{ fontSize: '9px', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
-          Các giáo án luyện tập của FitMate tuân thủ tiêu chuẩn an toàn y khoa từ:
-          <br />• <strong>Hiệp hội Y học Thể thao Hoa Kỳ (ACSM)</strong> - Hướng dẫn tập luyện lâm sàng.
-          <br />• <strong>Hiệp hội Tim mạch Hoa Kỳ (AHA)</strong> - Định mức nhịp tim và cường độ tập.
-          <br />• <strong>Khuyến nghị từ Bệnh viện Trung ương Quân đội 108</strong> về tập phục hồi chấn thương cơ xương khớp.
-        </p>
-      </div>
+
 
       {/* Swap suggestions modal */}
       {swapTarget && (
@@ -1034,17 +1022,18 @@ export default function WorkoutPlanner({ onCompleteTask, onWorkoutComplete, isWo
         <div style={{
           position: 'absolute',
           inset: 0,
-          background: 'rgba(12, 15, 18, 0.96)',
+          background: 'rgba(12, 15, 18, 0.98)',
           zIndex: 3000,
           borderRadius: '30px',
           padding: '24px 20px',
           display: 'flex',
           flexDirection: 'column',
           gap: '14px',
-          overflowY: 'auto'
+          overflowY: 'auto',
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none'
         }}>
           <div style={{ textAlign: 'center', marginBottom: '8px' }}>
-            <div style={{ fontSize: '24px', marginBottom: '6px' }}>🩺</div>
             <h4 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--accent-orange)' }}>Khảo Sát Bệnh Lý & Chấn Thương</h4>
             <p className="subtitle" style={{ fontSize: '10.5px', marginTop: '2px' }}>AI của FitMate sẽ tự động điều chỉnh bài tập phù hợp với thể trạng y tế của bạn</p>
           </div>

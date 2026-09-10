@@ -484,7 +484,7 @@ export default function UserProfile({ profile, onClose, posts, onUpdateProfile, 
               </div>
 
               <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
-                <span style={{ fontWeight: 700, color: 'var(--accent-green)' }}>🎯 Mục tiêu:</span> {profile.bio || 'Chưa cập nhật mục tiêu.'}
+                <span style={{ fontWeight: 700, color: 'var(--accent-green)' }}>Mục tiêu:</span> {profile.bio || 'Chưa cập nhật mục tiêu.'}
               </p>
 
               {profile.isPt && (
@@ -576,37 +576,37 @@ export default function UserProfile({ profile, onClose, posts, onUpdateProfile, 
                 Thông tin chi tiết
               </h4>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'var(--text-secondary)' }}>📏 Chiều cao:</span>
+                <span style={{ color: 'var(--text-secondary)' }}>Chiều cao:</span>
                 <span style={{ fontWeight: 600 }}>{profile.height || 'Chưa cập nhật'}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'var(--text-secondary)' }}>⚖️ Cân nặng:</span>
+                <span style={{ color: 'var(--text-secondary)' }}>Cân nặng:</span>
                 <span style={{ fontWeight: 600 }}>{profile.weight || 'Chưa cập nhật'}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'var(--text-secondary)' }}>📞 Số điện thoại:</span>
+                <span style={{ color: 'var(--text-secondary)' }}>Số điện thoại:</span>
                 <span style={{ fontWeight: 600 }}>{profile.phone || 'Chưa cập nhật'}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'var(--text-secondary)' }}>🎂 Ngày sinh:</span>
+                <span style={{ color: 'var(--text-secondary)' }}>Ngày sinh:</span>
                 <span style={{ fontWeight: 600 }}>{profile.birthday || 'Chưa cập nhật'}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'var(--text-secondary)' }}>🚻 Giới tính:</span>
+                <span style={{ color: 'var(--text-secondary)' }}>Giới tính:</span>
                 <span style={{ fontWeight: 600 }}>{profile.gender || 'Chưa cập nhật'}</span>
               </div>
               {!profile.isPt ? (
                 <>
                   <div style={{ display: 'flex', justifyContent: 'space-between', flexDirection: 'column', gap: '2px', borderTop: '1px dashed var(--border-color)', paddingTop: '6px', marginTop: '2px' }}>
-                    <span style={{ color: 'var(--text-secondary)' }}>🩺 Bệnh nền & Chấn thương:</span>
+                    <span style={{ color: 'var(--text-secondary)' }}>Bệnh nền & Chấn thương:</span>
                     <span style={{ fontWeight: 600, color: 'var(--accent-orange)' }}>{profile.medicalCondition || 'Không có'}</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', flexDirection: 'column', gap: '2px' }}>
-                    <span style={{ color: 'var(--text-secondary)' }}>🚫 Dị ứng thức ăn:</span>
+                    <span style={{ color: 'var(--text-secondary)' }}>Dị ứng thức ăn:</span>
                     <span style={{ fontWeight: 600, color: 'var(--accent-green)' }}>{profile.allergies || 'Không có'}</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', flexDirection: 'column', gap: '2px' }}>
-                    <span style={{ color: 'var(--text-secondary)' }}>⏰ Khung giờ tập:</span>
+                    <span style={{ color: 'var(--text-secondary)' }}>Khung giờ tập:</span>
                     <span style={{ fontWeight: 600 }}>
                       {profile.trainingTimes && profile.trainingTimes.length > 0 
                         ? profile.trainingTimes.join(', ') 
@@ -617,13 +617,13 @@ export default function UserProfile({ profile, onClose, posts, onUpdateProfile, 
               ) : (
                 <>
                   <div style={{ display: 'flex', justifyContent: 'space-between', flexDirection: 'column', gap: '2px', borderTop: '1px dashed var(--border-color)', paddingTop: '6px', marginTop: '2px' }}>
-                    <span style={{ color: 'var(--text-secondary)' }}>📜 Chứng chỉ hành nghề PT:</span>
+                    <span style={{ color: 'var(--text-secondary)' }}>Chứng chỉ hành nghề PT:</span>
                     <span style={{ fontWeight: 600, color: '#ffd700' }}>
                       {profile.certificates || "Bằng HLV Quốc tế NASM-CPT, Đại học Y khoa Phạm Ngọc Thạch"}
                     </span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', flexDirection: 'column', gap: '2px' }}>
-                    <span style={{ color: 'var(--text-secondary)' }}>⏰ Giờ đứng lớp trống:</span>
+                    <span style={{ color: 'var(--text-secondary)' }}>Giờ đứng lớp trống:</span>
                     <span style={{ fontWeight: 600 }}>
                       {profile.trainingTimes && profile.trainingTimes.length > 0 
                         ? profile.trainingTimes.join(', ') 
