@@ -50,9 +50,23 @@ export default function WorkoutPlanner({ onCompleteTask, onWorkoutComplete, isWo
     }
   }, [myProfile]);
 
-  // Lazy trigger: show medical modal if medicalCondition is 'Không có' or empty
+  // Sync selected conditions from profile if available
   useEffect(() => {
-    if (myProfile && (!myProfile.medicalCondition || myProfile.medicalCondition === 'Không có' || myProfile.medicalCondition === 'Chưa cập nhật')) {
+    if (myProfile?.medicalCondition && myProfile.medicalCondition !== 'Không có' && myProfile.medicalCondition !== 'Chưa cập nhật') {
+      const parts = myProfile.medicalCondition.split(',').map(s => s.trim()).filter(Boolean);
+      const standard = parts.filter(p => medicalConditionList.includes(p));
+      const custom = parts.filter(p => !medicalConditionList.includes(p)).join(', ');
+      setSelectedConditions(standard);
+      setCustomCondition(custom);
+    } else if (myProfile?.medicalCondition === 'Không có') {
+      setSelectedConditions([]);
+      setCustomCondition('');
+    }
+  }, [myProfile?.medicalCondition]);
+
+  // Lazy trigger: only show once if medicalCondition is 'Chưa cập nhật'
+  useEffect(() => {
+    if (myProfile && !myProfile.medicalSurveyDone && myProfile.medicalCondition === 'Chưa cập nhật') {
       setShowMedicalModal(true);
     }
   }, [myProfile]);
@@ -78,13 +92,14 @@ export default function WorkoutPlanner({ onCompleteTask, onWorkoutComplete, isWo
     if (onUpdateProfile) {
       onUpdateProfile({ 
         medicalCondition: conditionsString,
+        medicalSurveyDone: true,
         trainingTimes: timeSlots,
         trainingDays: selectedDays
       });
     }
 
     if (showToast) {
-      showToast('Đã lưu hồ sơ y tế, lịch tập & khung giờ tập của bạn! 🩺', 'success');
+      showToast('Đã lưu!', 'success');
     }
     setShowMedicalModal(false);
   };
@@ -1033,9 +1048,30 @@ export default function WorkoutPlanner({ onCompleteTask, onWorkoutComplete, isWo
           scrollbarWidth: 'none',
           msOverflowStyle: 'none'
         }}>
-          <div style={{ textAlign: 'center', marginBottom: '8px' }}>
-            <h4 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--accent-orange)' }}>Khảo Sát Bệnh Lý & Chấn Thương</h4>
-            <p className="subtitle" style={{ fontSize: '10.5px', marginTop: '2px' }}>AI của FitMate sẽ tự động điều chỉnh bài tập phù hợp với thể trạng y tế của bạn</p>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+            <div style={{ flex: 1, textAlign: 'center', paddingLeft: '28px' }}>
+              <h4 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--accent-orange)' }}>Khảo Sát Bệnh Lý & Chấn Thương</h4>
+              <p className="subtitle" style={{ fontSize: '10.5px', marginTop: '2px' }}>AI của FitMate sẽ tự động điều chỉnh bài tập phù hợp với thể trạng y tế của bạn</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowMedicalModal(false)}
+              style={{
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: 'none',
+                color: 'var(--text-secondary)',
+                width: '28px',
+                height: '28px',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                flexShrink: 0
+              }}
+            >
+              <X size={14} />
+            </button>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>

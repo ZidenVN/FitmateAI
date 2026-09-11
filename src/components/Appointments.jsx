@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Calendar, Clock, User, Check, X, Trash2, AlertCircle, Sparkles, CheckCircle2, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, User, Check, X, Trash2, AlertCircle, Sparkles, CheckCircle2, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function Appointments({ appointments, setAppointments, onClose, setScreen, myProfile }) {
   // Initialize to June 2026 (Month 5 because 0-indexed)
   const [currentMonth, setCurrentMonth] = useState(5);
   const [currentYear, setCurrentYear] = useState(2026);
-  const [selectedDate, setSelectedDate] = useState('2026-06-18');
-  const [viewAll, setViewAll] = useState(true);
+  const [activeModalDate, setActiveModalDate] = useState(null); // 'YYYY-MM-DD' when modal is opened
 
   const monthNames = [
     'Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6',
@@ -41,15 +40,31 @@ export default function Appointments({ appointments, setAppointments, onClose, s
     return `${year}-${m}-${d}`;
   };
 
+  // Filter list of appointments to show either the selected day or all appointments of the active month
+  const activeMonthAppointments = (appointments || []).filter(app => {
+    if (!app.date) return false;
+    const [appY, appM] = app.date.split('-');
+    const matchesDate = parseInt(appY) === currentYear && parseInt(appM) === (currentMonth + 1);
+    if (!matchesDate) return false;
+
+    // If logged in as PT, only show requests made to this PT
+    if (myProfile?.isPt) {
+      const cleanPtName = (myProfile.name || '').replace('(Bạn)', '').trim().toLowerCase();
+      const cleanApptPtName = (app.ptName || '').replace('(Bạn)', '').trim().toLowerCase();
+      return cleanPtName === cleanApptPtName;
+    }
+    return true;
+  });
+
   // Helper to check if a day in the currently viewed month has appointments
   const getAppointmentsForDay = (dayNum) => {
     const dateStr = formatDateStr(currentYear, currentMonth, dayNum);
-    return appointments.filter(app => app.date === dateStr);
+    return activeMonthAppointments.filter(app => app.date === dateStr);
   };
 
   const handleDayClick = (dayNum) => {
-    setSelectedDate(formatDateStr(currentYear, currentMonth, dayNum));
-    setViewAll(false);
+    const dateStr = formatDateStr(currentYear, currentMonth, dayNum);
+    setActiveModalDate(dateStr);
   };
 
   const handlePrevMonth = () => {
@@ -59,7 +74,6 @@ export default function Appointments({ appointments, setAppointments, onClose, s
     } else {
       setCurrentMonth(prev => prev - 1);
     }
-    setViewAll(true);
   };
 
   const handleNextMonth = () => {
@@ -69,7 +83,6 @@ export default function Appointments({ appointments, setAppointments, onClose, s
     } else {
       setCurrentMonth(prev => prev + 1);
     }
-    setViewAll(true);
   };
 
   // PT Actions Simulation
@@ -135,24 +148,10 @@ export default function Appointments({ appointments, setAppointments, onClose, s
     }
   };
 
-  // Filter list of appointments to show either the selected day or all appointments of the active month
-  const activeMonthAppointments = appointments.filter(app => {
-    const [appY, appM] = app.date.split('-');
-    const matchesDate = parseInt(appY) === currentYear && parseInt(appM) === (currentMonth + 1);
-    if (!matchesDate) return false;
-
-    // If logged in as PT, only show requests made to this PT
-    if (myProfile?.isPt) {
-      const cleanPtName = myProfile.name.replace('(Bạn)', '').trim().toLowerCase();
-      const cleanApptPtName = app.ptName.replace('(Bạn)', '').trim().toLowerCase();
-      return cleanPtName === cleanApptPtName;
-    }
-    return true;
-  });
-
-  const filteredAppointments = viewAll 
-    ? activeMonthAppointments
-    : activeMonthAppointments.filter(app => app.date === selectedDate);
+  // Appointments for the currently opened modal date
+  const modalAppointments = activeModalDate 
+    ? activeMonthAppointments.filter(app => app.date === activeModalDate)
+    : [];
 
   // Calendar dates generation
   const daysArray = [];
@@ -167,7 +166,7 @@ export default function Appointments({ appointments, setAppointments, onClose, s
   const monthAppointmentsCount = activeMonthAppointments.length;
 
   return (
-    <div className="screen-content animate-slide-up" style={{ padding: 0, display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <div className="screen-content animate-slide-up" style={{ padding: 0, display: 'flex', flexDirection: 'column', height: '100%', position: 'relative', overflowY: activeModalDate ? 'hidden' : 'auto' }}>
       {/* Header */}
       <div style={{ 
         display: 'flex', 
@@ -202,8 +201,8 @@ export default function Appointments({ appointments, setAppointments, onClose, s
         </div>
       </div>
 
-      {/* Main Scroll Area */}
-      <div style={{ overflowY: 'auto', flex: 1, padding: '16px 20px 80px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      {/* Main Content Area */}
+      <div style={{ overflowY: 'auto', flex: 1, padding: '16px 20px 80px', display: 'flex', flexDirection: 'column', gap: '16px', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
         
         {/* Month Selector header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '4px 0' }}>
@@ -223,8 +222,6 @@ export default function Appointments({ appointments, setAppointments, onClose, s
                 cursor: 'pointer',
                 transition: 'background 0.2s'
               }}
-              onMouseEnter={(e) => e.target.style.background = 'rgba(255,255,255,0.1)'}
-              onMouseLeave={(e) => e.target.style.background = 'rgba(255,255,255,0.05)'}
             >
               <ChevronLeft size={16} />
             </button>
@@ -253,8 +250,6 @@ export default function Appointments({ appointments, setAppointments, onClose, s
                 cursor: 'pointer',
                 transition: 'background 0.2s'
               }}
-              onMouseEnter={(e) => e.target.style.background = 'rgba(255,255,255,0.1)'}
-              onMouseLeave={(e) => e.target.style.background = 'rgba(255,255,255,0.05)'}
             >
               <ChevronRight size={16} />
             </button>
@@ -265,7 +260,7 @@ export default function Appointments({ appointments, setAppointments, onClose, s
         </div>
 
         {/* Calendar Card */}
-        <div className="glass-card" style={{ padding: '12px 10px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <div className="glass-card" style={{ padding: '16px 12px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {/* Weekday headers */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', textAlign: 'center', fontSize: '11px', fontWeight: 700, color: 'var(--text-secondary)' }}>
             <span>T2</span>
@@ -278,16 +273,12 @@ export default function Appointments({ appointments, setAppointments, onClose, s
           </div>
 
           {/* Days Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px 4px', textAlign: 'center' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px 4px', textAlign: 'center' }}>
             {daysArray.map((day, idx) => {
               if (day === null) {
-                return <div key={`empty-${idx}`} style={{ height: '36px' }} />;
+                return <div key={`empty-${idx}`} style={{ height: '42px' }} />;
               }
 
-              const dayStr = day.toString().padStart(2, '0');
-              const dateStr = formatDateStr(currentYear, currentMonth, day);
-              const isSelected = selectedDate === dateStr && !viewAll;
-              
               const dayAppts = getAppointmentsForDay(day);
               const hasAppts = dayAppts.length > 0;
 
@@ -296,35 +287,33 @@ export default function Appointments({ appointments, setAppointments, onClose, s
                   key={`day-${day}`}
                   onClick={() => handleDayClick(day)}
                   style={{
-                    height: '38px',
+                    height: '42px',
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'center',
                     alignItems: 'center',
                     position: 'relative',
-                    background: isSelected ? 'var(--accent-green)' : 'rgba(255,255,255,0.02)',
-                    border: isSelected 
-                      ? '1px solid var(--accent-green)' 
-                      : hasAppts 
-                        ? '1px dashed rgba(255,255,255,0.2)' 
-                        : '1px solid transparent',
+                    background: hasAppts ? 'rgba(57, 255, 20, 0.06)' : 'rgba(255,255,255,0.02)',
+                    border: hasAppts 
+                      ? '1px solid rgba(57, 255, 20, 0.35)' 
+                      : '1px solid transparent',
                     borderRadius: '10px',
-                    color: isSelected ? 'var(--bg-dark)' : 'var(--text-primary)',
-                    fontWeight: isSelected || hasAppts ? 700 : 500,
-                    fontSize: '12.5px',
+                    color: hasAppts ? 'white' : 'var(--text-primary)',
+                    fontWeight: hasAppts ? 700 : 500,
+                    fontSize: '13px',
                     cursor: 'pointer',
                     transition: 'all 0.15s ease'
                   }}
                 >
-                  <span>{day}</span>
+                  <span style={{ marginTop: hasAppts ? '-4px' : '0' }}>{day}</span>
                   
                   {/* Status Dots */}
                   {hasAppts && (
                     <div style={{ 
                       display: 'flex', 
-                      gap: '2px', 
+                      gap: '3px', 
                       position: 'absolute', 
-                      bottom: '4px' 
+                      bottom: '5px' 
                     }}>
                       {dayAppts.slice(0, 3).map((appt) => {
                         const style = getStatusStyle(appt.status);
@@ -332,10 +321,11 @@ export default function Appointments({ appointments, setAppointments, onClose, s
                           <span 
                             key={appt.id} 
                             style={{ 
-                              width: '4px', 
-                              height: '4px', 
+                              width: '5px', 
+                              height: '5px', 
                               borderRadius: '50%', 
-                              background: isSelected ? 'var(--bg-dark)' : style.dot 
+                              background: style.dot,
+                              boxShadow: `0 0 4px ${style.dot}`
                             }} 
                           />
                         );
@@ -348,154 +338,284 @@ export default function Appointments({ appointments, setAppointments, onClose, s
           </div>
         </div>
 
-        {/* View Options Toggle */}
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <button
-            onClick={() => setViewAll(true)}
-            style={{
-              flex: 1,
-              padding: '8px 12px',
-              borderRadius: '10px',
-              border: '1px solid',
-              background: viewAll ? 'rgba(57, 255, 20, 0.08)' : 'rgba(255,255,255,0.02)',
-              borderColor: viewAll ? 'var(--accent-green)' : 'var(--border-color)',
-              color: viewAll ? 'var(--accent-green)' : 'var(--text-secondary)',
-              fontSize: '12px',
-              fontWeight: 600,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '6px'
-            }}
+        {/* Calendar Legend & Tips */}
+        <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '10px', padding: '14px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-secondary)' }}>Chú thích trạng thái:</span>
+            <span style={{ fontSize: '10.5px', color: 'var(--accent-green)', fontWeight: 600 }}>{monthAppointmentsCount} cuộc hẹn tháng này</span>
+          </div>
+          
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', fontSize: '10.5px', color: 'var(--text-secondary)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--accent-green)' }} />
+              <span>Đã hẹn</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--accent-orange)' }} />
+              <span>Đợi xác nhận</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--text-secondary)' }} />
+              <span>Đã xong / Khác</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Action / Guide */}
+        <div className="glass-card" style={{ 
+          background: 'rgba(57, 255, 20, 0.02)', 
+          borderColor: 'rgba(57, 255, 20, 0.15)',
+          display: 'flex', 
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '14px'
+        }}>
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            <Sparkles size={18} color="var(--accent-green)" style={{ flexShrink: 0 }} />
+            <div>
+              <h5 style={{ fontSize: '12px', fontWeight: 700 }}>Đặt thêm lịch tập mới</h5>
+              <p className="subtitle" style={{ fontSize: '10px', marginTop: '2px' }}>
+                Chọn HLV chuyên nghiệp tại Chợ PT
+              </p>
+            </div>
+          </div>
+          <button 
+            className="btn-primary" 
+            onClick={() => setScreen('marketplace')}
+            style={{ fontSize: '11px', padding: '6px 12px', borderRadius: '8px', background: 'var(--accent-green)', color: 'var(--bg-dark)', fontWeight: 700, border: 'none', cursor: 'pointer' }}
           >
-            Tháng này ({monthAppointmentsCount})
-          </button>
-          <button
-            onClick={() => setViewAll(false)}
-            style={{
-              flex: 1.2,
-              padding: '8px 12px',
-              borderRadius: '10px',
-              border: '1px solid',
-              background: !viewAll ? 'rgba(57, 255, 20, 0.08)' : 'rgba(255,255,255,0.02)',
-              borderColor: !viewAll ? 'var(--accent-green)' : 'var(--border-color)',
-              color: !viewAll ? 'var(--accent-green)' : 'var(--text-secondary)',
-              fontSize: '12px',
-              fontWeight: 600,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '6px'
-            }}
-          >
-            Ngày {selectedDate.split('-')[2] || ''} ({getAppointmentsForDay(parseInt(selectedDate.split('-')[2] || '0')).length})
+            Chợ PT
           </button>
         </div>
 
-        {/* Appointment Cards Section */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h4 style={{ fontSize: '13px', fontWeight: 700 }}>
-              {viewAll ? `Lịch hẹn tháng ${currentMonth + 1}/${currentYear}` : `Hẹn ngày ${selectedDate.split('-').reverse().join('/')}`}
-            </h4>
-            {viewAll && monthAppointmentsCount > 0 && (
-              <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>
-                Nhấn ngày trên lịch để lọc nhanh
-              </span>
-            )}
+      </div>
+
+      {/* Day Appointments Modal / Overlay */}
+      {activeModalDate && (
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'rgba(12, 15, 18, 0.98)',
+          zIndex: 3000,
+          borderRadius: '30px',
+          padding: '24px 20px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '14px',
+          overflowY: 'auto',
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none'
+        }}>
+          {/* Modal Header */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '10px', borderBottom: '1px solid var(--border-color)' }}>
+            <div>
+              <h4 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--accent-green)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Calendar size={16} /> Lịch hẹn ngày {activeModalDate.split('-').reverse().join('/')}
+              </h4>
+              <p className="subtitle" style={{ fontSize: '10.5px', marginTop: '2px' }}>
+                {modalAppointments.length > 0 ? `${modalAppointments.length} cuộc hẹn trong ngày` : 'Không có lịch hẹn'}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setActiveModalDate(null)}
+              style={{
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: 'none',
+                color: 'var(--text-secondary)',
+                width: '30px',
+                height: '30px',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer'
+              }}
+            >
+              <X size={16} />
+            </button>
           </div>
 
-          {filteredAppointments.length > 0 ? (
-            filteredAppointments.map((appt) => {
-              const statusStyle = getStatusStyle(appt.status);
-              const isPT = myProfile?.isPt;
-              const titleText = isPT 
-                ? `Học viên: ${appt.userName || 'Hùng'}` 
-                : `HLV ${appt.ptName}`;
-              const avatarUrl = isPT 
-                ? (appt.userAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=60')
-                : (appt.ptName === 'Mai Xuân Tú' 
-                    ? 'https://images.unsplash.com/photo-1548690312-e3b507d8c110?w=150&auto=format&fit=crop&q=60'
-                    : (appt.ptName === 'Nguyễn Minh Khang'
-                        ? 'https://images.unsplash.com/photo-1567013127542-490d757e51fc?w=150&auto=format&fit=crop&q=60'
-                        : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=60'));
+          {/* Modal List of Appointments */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1 }}>
+            {modalAppointments.length > 0 ? (
+              modalAppointments.map((appt) => {
+                const statusStyle = getStatusStyle(appt.status);
+                const isPT = myProfile?.isPt;
+                const titleText = isPT 
+                  ? `Học viên: ${appt.userName || 'Hùng'}` 
+                  : `HLV ${appt.ptName}`;
+                const avatarUrl = isPT 
+                  ? (appt.userAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=60')
+                  : (appt.ptName === 'Mai Xuân Tú' 
+                      ? 'https://images.unsplash.com/photo-1548690312-e3b507d8c110?w=150&auto=format&fit=crop&q=60'
+                      : (appt.ptName === 'Nguyễn Minh Khang'
+                          ? 'https://images.unsplash.com/photo-1567013127542-490d757e51fc?w=150&auto=format&fit=crop&q=60'
+                          : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=60'));
 
-              return (
-                <div 
-                  key={appt.id} 
-                  className="glass-card" 
-                  style={{ 
-                    padding: '14px', 
-                    display: 'flex', 
-                    flexDirection: 'column', 
-                    gap: '12px',
-                    borderColor: appt.status === 'Đợi xác nhận' ? 'rgba(255, 87, 34, 0.15)' : 'var(--border-color)'
-                  }}
-                >
-                  {/* Top card metadata */}
-                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                    <img 
-                      src={avatarUrl} 
-                      alt={titleText} 
-                      style={{ width: '40px', height: '40px', borderRadius: '10px', objectFit: 'cover' }}
-                    />
-                    <div style={{ flex: 1 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <span style={{ fontSize: '13px', fontWeight: 700 }}>{titleText}</span>
-                        <span style={{
-                          fontSize: '9px',
-                          fontWeight: 700,
-                          padding: '2px 8px',
-                          borderRadius: '6px',
-                          background: statusStyle.bg,
-                          color: statusStyle.color,
-                          border: statusStyle.border
-                        }}>
-                          {appt.status}
-                        </span>
-                      </div>
-                      <div style={{ display: 'flex', gap: '10px', marginTop: '4px', fontSize: '11px', color: 'var(--text-secondary)' }}>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <Calendar size={12} />
-                          {appt.date.split('-').reverse().join('/')}
-                        </span>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <Clock size={12} />
-                          {appt.time}
-                        </span>
+                return (
+                  <div 
+                    key={appt.id} 
+                    className="glass-card" 
+                    style={{ 
+                      padding: '14px', 
+                      display: 'flex', 
+                      flexDirection: 'column', 
+                      gap: '12px',
+                      borderColor: appt.status === 'Đợi xác nhận' ? 'rgba(255, 87, 34, 0.3)' : 'var(--border-color)'
+                    }}
+                  >
+                    {/* Top card metadata */}
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                      <img 
+                        src={avatarUrl} 
+                        alt={titleText} 
+                        style={{ width: '42px', height: '42px', borderRadius: '10px', objectFit: 'cover' }}
+                      />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                          <span style={{ fontSize: '13.5px', fontWeight: 700 }}>{titleText}</span>
+                          <span style={{
+                            fontSize: '9.5px',
+                            fontWeight: 700,
+                            padding: '2px 8px',
+                            borderRadius: '6px',
+                            background: statusStyle.bg,
+                            color: statusStyle.color,
+                            border: statusStyle.border
+                          }}>
+                            {appt.status}
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', gap: '10px', marginTop: '4px', fontSize: '11px', color: 'var(--text-secondary)' }}>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Calendar size={12} />
+                            {appt.date.split('-').reverse().join('/')}
+                          </span>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Clock size={12} />
+                            {appt.time}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Actions Container */}
-                  <div style={{ 
-                    marginTop: '2px', 
-                    background: 'rgba(0,0,0,0.15)', 
-                    padding: '10px', 
-                    borderRadius: '10px', 
-                    border: '1px solid rgba(255,255,255,0.03)' 
-                  }}>
-                    {isPT ? (
-                      // PT Role Action Controls
-                      <>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '9.5px', color: 'var(--text-secondary)', fontWeight: 700 }}>
-                          <CheckCircle2 size={11} color="var(--accent-green)" />
-                          <span>HÀNH ĐỘNG CỦA BẠN (HLV)</span>
-                        </div>
-                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                          {appt.status === 'Đợi xác nhận' && (
-                            <>
+                    {/* Actions Container */}
+                    <div style={{ 
+                      marginTop: '2px', 
+                      background: 'rgba(0,0,0,0.15)', 
+                      padding: '10px', 
+                      borderRadius: '10px', 
+                      border: '1px solid rgba(255,255,255,0.03)' 
+                    }}>
+                      {isPT ? (
+                        // PT Role Action Controls
+                        <>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '9.5px', color: 'var(--text-secondary)', fontWeight: 700 }}>
+                            <CheckCircle2 size={11} color="var(--accent-green)" />
+                            <span>HÀNH ĐỘNG CỦA BẠN (HLV)</span>
+                          </div>
+                          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                            {appt.status === 'Đợi xác nhận' && (
+                              <>
+                                <button
+                                  onClick={() => updateStatus(appt.id, 'Đã hẹn')}
+                                  style={{
+                                    flex: 1.5,
+                                    padding: '6px 10px',
+                                    borderRadius: '6px',
+                                    background: 'rgba(57, 255, 20, 0.1)',
+                                    border: '1px solid rgba(57, 255, 20, 0.3)',
+                                    color: 'var(--accent-green)',
+                                    fontSize: '11px',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '4px'
+                                  }}
+                                >
+                                  <Check size={11} /> Xác nhận hẹn
+                                </button>
+                                <button
+                                  onClick={() => updateStatus(appt.id, 'Từ chối')}
+                                  style={{
+                                    flex: 1,
+                                    padding: '6px 8px',
+                                    borderRadius: '6px',
+                                    background: 'rgba(255, 87, 34, 0.1)',
+                                    border: '1px solid rgba(255, 87, 34, 0.3)',
+                                    color: 'var(--accent-orange)',
+                                    fontSize: '11px',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '4px'
+                                  }}
+                                >
+                                  <X size={11} /> Từ chối
+                                </button>
+                              </>
+                            )}
+
+                            {appt.status === 'Đã hẹn' && (
+                              <>
+                                <button
+                                  onClick={() => updateStatus(appt.id, 'Đã xong')}
+                                  style={{
+                                    flex: 1,
+                                    padding: '6px 10px',
+                                    borderRadius: '6px',
+                                    background: 'rgba(57, 255, 20, 0.1)',
+                                    border: '1px solid rgba(57, 255, 20, 0.3)',
+                                    color: 'var(--accent-green)',
+                                    fontSize: '11px',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '4px'
+                                  }}
+                                >
+                                  <CheckCircle2 size={11} /> Đã hoàn thành
+                                </button>
+                                <button
+                                  onClick={() => updateStatus(appt.id, 'Trễ hẹn')}
+                                  style={{
+                                    flex: 1,
+                                    padding: '6px 10px',
+                                    borderRadius: '6px',
+                                    background: 'rgba(255, 61, 0, 0.1)',
+                                    border: '1px solid rgba(255, 61, 0, 0.3)',
+                                    color: '#ff3d00',
+                                    fontSize: '11px',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '4px'
+                                  }}
+                                >
+                                  <AlertCircle size={11} /> Trễ / Vắng mặt
+                                </button>
+                              </>
+                            )}
+
+                            {(appt.status === 'Đã xong' || appt.status === 'Trễ hẹn' || appt.status === 'Từ chối') && (
                               <button
-                                onClick={() => updateStatus(appt.id, 'Đã hẹn')}
+                                onClick={() => deleteAppointment(appt.id)}
                                 style={{
-                                  flex: 1.5,
+                                  flex: 1,
                                   padding: '6px 10px',
                                   borderRadius: '6px',
-                                  background: 'rgba(57, 255, 20, 0.1)',
-                                  border: '1px solid rgba(57, 255, 20, 0.3)',
-                                  color: 'var(--accent-green)',
+                                  background: 'rgba(255, 255, 255, 0.03)',
+                                  border: '1px solid var(--border-color)',
+                                  color: 'var(--text-secondary)',
                                   fontSize: '11px',
                                   fontWeight: 600,
                                   cursor: 'pointer',
@@ -505,16 +625,28 @@ export default function Appointments({ appointments, setAppointments, onClose, s
                                   gap: '4px'
                                 }}
                               >
-                                <Check size={11} /> Xác nhận hẹn
+                                <Trash2 size={11} /> Xóa lịch sử cuộc hẹn
                               </button>
+                            )}
+                          </div>
+                        </>
+                      ) : (
+                        // User Role Action Controls
+                        <>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '9.5px', color: 'var(--text-secondary)', fontWeight: 700 }}>
+                            <User size={11} color="var(--accent-green)" />
+                            <span>HÀNH ĐỘNG CỦA BẠN (HỘI VIÊN)</span>
+                          </div>
+                          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                            {appt.status === 'Đợi xác nhận' && (
                               <button
-                                onClick={() => updateStatus(appt.id, 'Từ chối')}
+                                onClick={() => deleteAppointment(appt.id)}
                                 style={{
                                   flex: 1,
-                                  padding: '6px 8px',
+                                  padding: '6px 10px',
                                   borderRadius: '6px',
-                                  background: 'rgba(255, 87, 34, 0.1)',
-                                  border: '1px solid rgba(255, 87, 34, 0.3)',
+                                  background: 'rgba(255, 87, 34, 0.08)',
+                                  border: '1px solid rgba(255, 87, 34, 0.2)',
                                   color: 'var(--accent-orange)',
                                   fontSize: '11px',
                                   fontWeight: 600,
@@ -525,22 +657,20 @@ export default function Appointments({ appointments, setAppointments, onClose, s
                                   gap: '4px'
                                 }}
                               >
-                                <X size={11} /> Từ chối
+                                <X size={11} /> Hủy yêu cầu đặt lịch
                               </button>
-                            </>
-                          )}
+                            )}
 
-                          {appt.status === 'Đã hẹn' && (
-                            <>
+                            {appt.status === 'Đã hẹn' && (
                               <button
-                                onClick={() => updateStatus(appt.id, 'Đã xong')}
+                                onClick={() => deleteAppointment(appt.id)}
                                 style={{
                                   flex: 1,
                                   padding: '6px 10px',
                                   borderRadius: '6px',
-                                  background: 'rgba(57, 255, 20, 0.1)',
-                                  border: '1px solid rgba(57, 255, 20, 0.3)',
-                                  color: 'var(--accent-green)',
+                                  background: 'rgba(255, 87, 34, 0.08)',
+                                  border: '1px solid rgba(255, 87, 34, 0.2)',
+                                  color: 'var(--accent-orange)',
                                   fontSize: '11px',
                                   fontWeight: 600,
                                   cursor: 'pointer',
@@ -550,17 +680,20 @@ export default function Appointments({ appointments, setAppointments, onClose, s
                                   gap: '4px'
                                 }}
                               >
-                                <CheckCircle2 size={11} /> Đã hoàn thành
+                                <X size={11} /> Hủy lịch tập này
                               </button>
+                            )}
+
+                            {(appt.status === 'Đã xong' || appt.status === 'Trễ hẹn' || appt.status === 'Từ chối') && (
                               <button
-                                onClick={() => updateStatus(appt.id, 'Trễ hẹn')}
+                                onClick={() => deleteAppointment(appt.id)}
                                 style={{
                                   flex: 1,
                                   padding: '6px 10px',
                                   borderRadius: '6px',
-                                  background: 'rgba(255, 61, 0, 0.1)',
-                                  border: '1px solid rgba(255, 61, 0, 0.3)',
-                                  color: '#ff3d00',
+                                  background: 'rgba(255, 255, 255, 0.03)',
+                                  border: '1px solid var(--border-color)',
+                                  color: 'var(--text-secondary)',
                                   fontSize: '11px',
                                   fontWeight: 600,
                                   cursor: 'pointer',
@@ -570,150 +703,35 @@ export default function Appointments({ appointments, setAppointments, onClose, s
                                   gap: '4px'
                                 }}
                               >
-                                <AlertCircle size={11} /> Trễ / Vắng mặt
+                                <Trash2 size={11} /> Xóa lịch sử cuộc hẹn
                               </button>
-                            </>
-                          )}
-
-                          {(appt.status === 'Đã xong' || appt.status === 'Trễ hẹn' || appt.status === 'Từ chối') && (
-                            <button
-                              onClick={() => deleteAppointment(appt.id)}
-                              style={{
-                                flex: 1,
-                                padding: '6px 10px',
-                                borderRadius: '6px',
-                                background: 'rgba(255, 255, 255, 0.03)',
-                                border: '1px solid var(--border-color)',
-                                color: 'var(--text-secondary)',
-                                fontSize: '11px',
-                                fontWeight: 600,
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                gap: '4px'
-                              }}
-                            >
-                              <Trash2 size={11} /> Xóa lịch sử cuộc hẹn
-                            </button>
-                          )}
-                        </div>
-                      </>
-                    ) : (
-                      // User Role Action Controls
-                      <>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '9.5px', color: 'var(--text-secondary)', fontWeight: 700 }}>
-                          <User size={11} color="var(--accent-green)" />
-                          <span>HÀNH ĐỘNG CỦA BẠN (HỘI VIÊN)</span>
-                        </div>
-                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                          {appt.status === 'Đợi xác nhận' && (
-                            <button
-                              onClick={() => deleteAppointment(appt.id)}
-                              style={{
-                                flex: 1,
-                                padding: '6px 10px',
-                                borderRadius: '6px',
-                                background: 'rgba(255, 87, 34, 0.08)',
-                                border: '1px solid rgba(255, 87, 34, 0.2)',
-                                color: 'var(--accent-orange)',
-                                fontSize: '11px',
-                                fontWeight: 600,
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                gap: '4px'
-                              }}
-                            >
-                              <X size={11} /> Hủy yêu cầu đặt lịch
-                            </button>
-                          )}
-
-                          {appt.status === 'Đã hẹn' && (
-                            <button
-                              onClick={() => deleteAppointment(appt.id)}
-                              style={{
-                                flex: 1,
-                                padding: '6px 10px',
-                                borderRadius: '6px',
-                                background: 'rgba(255, 87, 34, 0.08)',
-                                border: '1px solid rgba(255, 87, 34, 0.2)',
-                                color: 'var(--accent-orange)',
-                                fontSize: '11px',
-                                fontWeight: 600,
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                gap: '4px'
-                              }}
-                            >
-                              <X size={11} /> Hủy lịch tập này
-                            </button>
-                          )}
-
-                          {(appt.status === 'Đã xong' || appt.status === 'Trễ hẹn' || appt.status === 'Từ chối') && (
-                            <button
-                              onClick={() => deleteAppointment(appt.id)}
-                              style={{
-                                flex: 1,
-                                padding: '6px 10px',
-                                borderRadius: '6px',
-                                background: 'rgba(255, 255, 255, 0.03)',
-                                border: '1px solid var(--border-color)',
-                                color: 'var(--text-secondary)',
-                                fontSize: '11px',
-                                fontWeight: 600,
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                gap: '4px'
-                              }}
-                            >
-                              <Trash2 size={11} /> Xóa lịch sử cuộc hẹn
-                            </button>
-                          )}
-                        </div>
-                      </>
-                    )}
+                            )}
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })
-          ) : (
-            <div className="glass-card" style={{ padding: '30px 20px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-              <Calendar size={32} style={{ opacity: 0.3, marginBottom: '8px' }} />
-              <p style={{ fontSize: '12.5px' }}>Không có cuộc hẹn nào trong tháng này.</p>
-              <button 
-                className="btn-secondary" 
-                onClick={() => setScreen('marketplace')}
-                style={{ marginTop: '12px', fontSize: '11px', padding: '6px 12px' }}
-              >
-                Đặt lịch với PT ngay
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Demo Guide Box */}
-        <div className="glass-card" style={{ 
-          background: 'rgba(57, 255, 20, 0.02)', 
-          borderColor: 'rgba(57, 255, 20, 0.1)',
-          display: 'flex', 
-          gap: '8px' 
-        }}>
-          <Sparkles size={16} color="var(--accent-green)" style={{ flexShrink: 0, marginTop: '2px' }} />
-          <div>
-            <h5 style={{ fontSize: '11.5px', fontWeight: 700 }}>Hướng dẫn thử nghiệm</h5>
-            <p className="subtitle" style={{ fontSize: '9.5px', marginTop: '2px', lineHeight: '1.3' }}>
-              Bạn có thể đặt lịch hẹn tập mới bằng cách vào **Chợ PT** hoặc **Trang cá nhân** của HLV và nhấn **Đặt lịch tập miễn phí**.
-            </p>
+                );
+              })
+            ) : (
+              <div className="glass-card" style={{ padding: '30px 20px', textAlign: 'center', color: 'var(--text-secondary)', marginTop: '20px' }}>
+                <Calendar size={32} style={{ opacity: 0.3, marginBottom: '8px' }} />
+                <p style={{ fontSize: '12.5px' }}>Không có cuộc hẹn nào trong ngày này.</p>
+                <button 
+                  className="btn-secondary" 
+                  onClick={() => {
+                    setActiveModalDate(null);
+                    setScreen('marketplace');
+                  }}
+                  style={{ marginTop: '12px', fontSize: '11px', padding: '6px 12px' }}
+                >
+                  Đặt lịch với PT ngay
+                </button>
+              </div>
+            )}
           </div>
         </div>
-
-      </div>
+      )}
     </div>
   );
 }

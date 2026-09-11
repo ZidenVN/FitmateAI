@@ -46,9 +46,23 @@ export default function NutritionVision({ onAddCalories, onCompleteTask, dietSta
   const [targetReplaceDay, setTargetReplaceDay] = useState(getTodayString());
   const [targetReplaceMeal, setTargetReplaceMeal] = useState('lunch'); // 'breakfast', 'lunch', 'dinner'
 
-  // Lazy trigger: show allergy modal if allergies is 'Không có' or empty
+  // Sync selected allergies from profile
   useEffect(() => {
-    if (myProfile && (!myProfile.allergies || myProfile.allergies === 'Không có' || myProfile.allergies === 'Chưa cập nhật')) {
+    if (myProfile?.allergies && myProfile.allergies !== 'Không có' && myProfile.allergies !== 'Chưa cập nhật') {
+      const parts = myProfile.allergies.split(',').map(s => s.trim()).filter(Boolean);
+      const standard = parts.filter(p => allergyList.includes(p));
+      const custom = parts.filter(p => !allergyList.includes(p)).join(', ');
+      setSelectedAllergies(standard);
+      setCustomAllergy(custom);
+    } else if (myProfile?.allergies === 'Không có') {
+      setSelectedAllergies([]);
+      setCustomAllergy('');
+    }
+  }, [myProfile?.allergies]);
+
+  // Lazy trigger: only show once if allergies is 'Chưa cập nhật'
+  useEffect(() => {
+    if (myProfile && !myProfile.allergySurveyDone && myProfile.allergies === 'Chưa cập nhật') {
       setShowAllergyModal(true);
     }
   }, [myProfile]);
@@ -72,11 +86,14 @@ export default function NutritionVision({ onAddCalories, onCompleteTask, dietSta
     const allergiesString = finalAllergies.length > 0 ? finalAllergies.join(', ') : 'Không có';
     
     if (onUpdateProfile) {
-      onUpdateProfile({ allergies: allergiesString });
+      onUpdateProfile({ 
+        allergies: allergiesString,
+        allergySurveyDone: true
+      });
     }
     
     if (showToast) {
-      showToast('Đã cập nhật thông tin dị ứng của bạn! 🛡️', 'success');
+      showToast('Đã lưu!', 'success');
     }
     setShowAllergyModal(false);
   };
@@ -199,7 +216,7 @@ export default function NutritionVision({ onAddCalories, onCompleteTask, dietSta
   const [activeTab, setActiveTab] = useState('scan'); // 'scan' | 'plan'
 
   return (
-    <div className="screen-content animate-slide-up" style={{ paddingBottom: '80px', overflowY: 'auto', height: '100%' }}>
+    <div className="screen-content animate-slide-up" style={{ position: 'relative', paddingBottom: '80px', display: 'flex', flexDirection: 'column', height: '100%', overflowY: (showAllergyModal || suggestedAlternative) ? 'hidden' : 'auto' }}>
       {/* Title */}
       <div>
         <h2 className="title-large" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -676,18 +693,41 @@ export default function NutritionVision({ onAddCalories, onCompleteTask, dietSta
         <div style={{
           position: 'absolute',
           inset: 0,
-          background: 'rgba(12, 15, 18, 0.96)',
+          background: 'rgba(12, 15, 18, 0.98)',
           zIndex: 3000,
           borderRadius: '30px',
           padding: '24px 20px',
           display: 'flex',
           flexDirection: 'column',
           gap: '14px',
-          overflowY: 'auto'
+          overflowY: 'auto',
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none'
         }}>
-          <div style={{ textAlign: 'center', marginBottom: '8px' }}>
-            <h4 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--accent-orange)' }}>Khảo Sát Dị Ứng Thực Phẩm</h4>
-            <p className="subtitle" style={{ fontSize: '10.5px', marginTop: '2px' }}>AI của FitMate sẽ loại bỏ món ăn gây hại khỏi lịch trình của bạn</p>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+            <div style={{ flex: 1, textAlign: 'center', paddingLeft: '28px' }}>
+              <h4 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--accent-orange)' }}>Khảo Sát Dị Ứng Thực Phẩm</h4>
+              <p className="subtitle" style={{ fontSize: '10.5px', marginTop: '2px' }}>AI của FitMate sẽ loại bỏ món ăn gây hại khỏi lịch trình của bạn</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowAllergyModal(false)}
+              style={{
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: 'none',
+                color: 'var(--text-secondary)',
+                width: '28px',
+                height: '28px',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                flexShrink: 0
+              }}
+            >
+              <X size={14} />
+            </button>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>

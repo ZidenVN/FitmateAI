@@ -21,7 +21,7 @@ export default function ChuyenSau({ myProfile, onUpdateProfile, onClose, showToa
         trainingTimes: timeSlots
       });
       if (showToast) {
-        showToast('Đã lưu thông tin chuyên sâu thành công!', 'success');
+        showToast('Đã lưu!', 'success');
       }
       setIsEditing(false);
     }
