@@ -10,6 +10,7 @@ import Messenger from './components/Messenger';
 import Appointments from './components/Appointments';
 import Auth from './components/Auth';
 import ChuyenSau from './components/ChuyenSau';
+import { ALL_SYSTEM_USERS } from './components/UserSearchModal';
 
 const DEFAULT_USERS = {
   'user@fitmate.vn': {
@@ -30,8 +31,8 @@ const DEFAULT_USERS = {
       medicalCondition: 'Không có',
       allergies: 'Không có',
       trainingDays: ['Thứ 2', 'Thứ 4', 'Thứ 6'],
-      trainingTime: '18:00',
-      trainingTimes: ['18:00']
+      trainingTime: '06:00 PM - 08:00 PM',
+      trainingTimes: ['06:00 PM - 08:00 PM']
     },
     streak: 7,
     rewardPoints: 250,
@@ -51,14 +52,74 @@ const DEFAULT_USERS = {
       {
         id: 2,
         title: "Kế hoạch tập ngực 💪",
-        messages: [{ id: 1, text: "Chào Hùng! Hôm nay bạn muốn tập ngực hiệu quả hơn đúng không?", sender: 'buddy' }]
+        messages: [{ id: 1, text: "Chào Hùng! Hôm nay bạn muốn tập ngực hiệuavor hơn đúng không?", sender: 'buddy' }]
       },
       {
         id: 3,
         title: "Hỏi về Calisthenics 🤸‍♂️",
         messages: [{ id: 1, text: "Chào Hùng! Bạn muốn tìm hiểu kỹ thuật chống đẩy hay lên xà?", sender: 'buddy' }]
       }
-    ]
+    ],
+    notifications: [
+      {
+        id: 1,
+        type: 'friend_request',
+        senderName: 'Nguyễn Phúc Thịnh',
+        senderAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=60',
+        senderRole: 'Thành viên',
+        message: 'Nguyễn Phúc Thịnh đã gửi cho bạn một lời mời kết bạn.',
+        time: '15 phút trước',
+        read: false,
+        status: 'pending'
+      },
+      {
+        id: 2,
+        type: 'friend_request',
+        senderName: 'Hoàng Gia Bảo',
+        senderAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=60',
+        senderRole: 'Leader CoreCrafter',
+        message: 'Hoàng Gia Bảo đã gửi cho bạn một lời mời kết bạn.',
+        time: '1 giờ trước',
+        read: false,
+        status: 'pending'
+      },
+      {
+        id: 3,
+        type: 'streak',
+        title: 'Thưởng chuỗi Streak 🔥',
+        message: 'Chúc mừng bạn đã duy trì chuỗi Streak 7 ngày tập luyện!',
+        time: 'Hôm qua',
+        read: true
+      }
+    ],
+    friendRequests: [
+      {
+        id: 1,
+        name: 'Nguyễn Phúc Thịnh',
+        role: 'Thành viên',
+        avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=60',
+        bio: 'Giảm 4kg mỡ thừa, duy trì lối sống lành mạnh ăn sạch sống khỏe! 🍜🥗',
+        time: '15 phút trước',
+        status: 'pending'
+      },
+      {
+        id: 2,
+        name: 'Hoàng Gia Bảo',
+        role: 'Leader CoreCrafter',
+        avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=60',
+        bio: 'Tăng 5kg cơ bắp, cải thiện kỹ năng Planche và Handstand! 🔥💪',
+        time: '1 giờ trước',
+        status: 'pending'
+      }
+    ],
+    sentRequests: [],
+    friendsList: ['Nguyễn Đào Tùng Lâm'],
+    conversations: {
+      'Nguyễn Đào Tùng Lâm': [
+        { id: 1, text: 'Chào bạn! Cùng nhau tập luyện và giữ streak đều đặn nhé! 💪🔥', sender: 'friend', time: '08:30' },
+        { id: 2, text: 'Ok người anh em, cùng cố gắng nào!', sender: 'user', time: '08:35' }
+      ]
+    }
   },
   'pt@fitmate.vn': {
     email: 'pt@fitmate.vn',
@@ -82,8 +143,8 @@ const DEFAULT_USERS = {
       medicalCondition: 'Không có',
       allergies: 'Không có',
       trainingDays: ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'],
-      trainingTime: '08:00',
-      trainingTimes: ['08:00']
+      trainingTime: '08:00 AM - 09:00 PM',
+      trainingTimes: ['08:00 AM - 09:00 PM']
     },
     streak: 15,
     rewardPoints: 500,
@@ -99,14 +160,83 @@ const DEFAULT_USERS = {
         title: "Tư vấn Huấn luyện viên 🤸‍♂️",
         messages: [{ id: 1, text: "Chào HLV Tú! Hôm nay thầy muốn xem giáo án nào?", sender: 'buddy' }]
       }
-    ]
+    ],
+    notifications: [
+      {
+        id: 101,
+        type: 'friend_request',
+        senderName: 'Lê Hoàng Long',
+        senderAvatar: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150&auto=format&fit=crop&q=60',
+        senderRole: 'Hội viên mới',
+        message: 'Lê Hoàng Long đã gửi lời mời kết bạn để nhờ tư vấn lộ trình.',
+        time: '20 phút trước',
+        read: false,
+        status: 'pending'
+      },
+      {
+        id: 102,
+        type: 'appointment',
+        title: 'Lịch hẹn mới 📅',
+        message: 'Học viên Hùng đã đặt lịch hẹn Calisthenics với bạn lúc 09:00',
+        time: '1 giờ trước',
+        read: false
+      },
+      {
+        id: 103,
+        type: 'streak',
+        title: 'HLV Xuất Sắc 🏆',
+        message: 'Chúc mừng HLV Tú đã hoàn thành 15 ngày hướng dẫn liên tục!',
+        time: 'Hôm qua',
+        read: true
+      }
+    ],
+    friendRequests: [
+      {
+        id: 101,
+        name: 'Lê Hoàng Long',
+        role: 'Hội viên mới',
+        avatar: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150&auto=format&fit=crop&q=60',
+        bio: 'Yêu thích chạy bộ marathon và rèn luyện sức bền tim mạch.',
+        time: '20 phút trước',
+        status: 'pending'
+      }
+    ],
+    sentRequests: [],
+    friendsList: ['Nguyễn Minh Khang'],
+    conversations: {
+      'Nguyễn Minh Khang': [
+        { id: 1, text: 'Thầy Tú ơi, tuần này giao lưu một buổi Calisthenics kết hợp Powerlifting không?', sender: 'friend', time: '08:00' },
+        { id: 2, text: 'Ý kiến hay đấy Khang! Chiều thứ 7 nhé!', sender: 'user', time: '08:15' }
+      ]
+    }
   }
 };
 
 export default function App() {
   const [usersDb, setUsersDb] = useState(() => {
     const saved = localStorage.getItem('fitmate_users');
-    return saved ? JSON.parse(saved) : DEFAULT_USERS;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        Object.keys(DEFAULT_USERS).forEach(email => {
+          if (!parsed[email]) {
+            parsed[email] = DEFAULT_USERS[email];
+          } else {
+            parsed[email] = {
+              ...DEFAULT_USERS[email],
+              ...parsed[email],
+              notifications: parsed[email].notifications !== undefined ? parsed[email].notifications : DEFAULT_USERS[email].notifications,
+              friendRequests: parsed[email].friendRequests !== undefined ? parsed[email].friendRequests : DEFAULT_USERS[email].friendRequests,
+              sentRequests: parsed[email].sentRequests !== undefined ? parsed[email].sentRequests : DEFAULT_USERS[email].sentRequests,
+              friendsList: parsed[email].friendsList !== undefined ? parsed[email].friendsList : DEFAULT_USERS[email].friendsList,
+              conversations: parsed[email].conversations !== undefined ? parsed[email].conversations : DEFAULT_USERS[email].conversations
+            };
+          }
+        });
+        return parsed;
+      } catch (e) {}
+    }
+    return DEFAULT_USERS;
   });
 
   const [currentUserEmail, setCurrentUserEmail] = useState(() => {
@@ -220,6 +350,24 @@ export default function App() {
 
   // Mock profiles database for other members & PTs (non-login accounts)
   const mockProfiles = {
+    'Hùng': {
+      name: 'Hùng',
+      role: 'Hội viên',
+      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=60',
+      bio: 'Đạt body 6 múi, cải thiện sức bền bỉ và thâm hụt mỡ bụng! 🏋️‍♂️🔥',
+      phone: '0912345678',
+      birthday: '15/05/2004',
+      gender: 'Nam',
+      height: '175 cm',
+      weight: '70 kg',
+      isPt: false,
+      isSelf: false,
+      medicalCondition: 'Không có',
+      allergies: 'Không có',
+      trainingDays: ['Thứ 2', 'Thứ 4', 'Thứ 6'],
+      trainingTime: '06:00 PM - 08:00 PM',
+      trainingTimes: ['06:00 PM - 08:00 PM']
+    },
     'Hoàng Gia Bảo': {
       name: 'Hoàng Gia Bảo',
       role: 'Leader CoreCrafter',
@@ -334,18 +482,391 @@ export default function App() {
     return DEFAULT_USERS['user@fitmate.vn'].appointments;
   });
 
+  // Friend Requests, Notifications & Messenger per-user state
+  const [notifications, setNotifications] = useState(() => {
+    const savedDb = localStorage.getItem('fitmate_users');
+    const db = savedDb ? JSON.parse(savedDb) : DEFAULT_USERS;
+    const currentUser = localStorage.getItem('fitmate_current_user') || 'user@fitmate.vn';
+    if (currentUser && db[currentUser]) {
+      return db[currentUser].notifications || [];
+    }
+    return DEFAULT_USERS['user@fitmate.vn'].notifications || [];
+  });
+
+  const [friendRequests, setFriendRequests] = useState(() => {
+    const savedDb = localStorage.getItem('fitmate_users');
+    const db = savedDb ? JSON.parse(savedDb) : DEFAULT_USERS;
+    const currentUser = localStorage.getItem('fitmate_current_user') || 'user@fitmate.vn';
+    if (currentUser && db[currentUser]) {
+      return db[currentUser].friendRequests || [];
+    }
+    return DEFAULT_USERS['user@fitmate.vn'].friendRequests || [];
+  });
+
+  const [sentRequests, setSentRequests] = useState(() => {
+    const savedDb = localStorage.getItem('fitmate_users');
+    const db = savedDb ? JSON.parse(savedDb) : DEFAULT_USERS;
+    const currentUser = localStorage.getItem('fitmate_current_user') || 'user@fitmate.vn';
+    if (currentUser && db[currentUser]) {
+      return db[currentUser].sentRequests || [];
+    }
+    return DEFAULT_USERS['user@fitmate.vn'].sentRequests || [];
+  });
+
+  const [friendsList, setFriendsList] = useState(() => {
+    const savedDb = localStorage.getItem('fitmate_users');
+    const db = savedDb ? JSON.parse(savedDb) : DEFAULT_USERS;
+    const currentUser = localStorage.getItem('fitmate_current_user') || 'user@fitmate.vn';
+    if (currentUser && db[currentUser]) {
+      return db[currentUser].friendsList || [];
+    }
+    return DEFAULT_USERS['user@fitmate.vn'].friendsList || [];
+  });
+
+  const [conversations, setConversations] = useState(() => {
+    const savedDb = localStorage.getItem('fitmate_users');
+    const db = savedDb ? JSON.parse(savedDb) : DEFAULT_USERS;
+    const currentUser = localStorage.getItem('fitmate_current_user') || 'user@fitmate.vn';
+    if (currentUser && db[currentUser]) {
+      return db[currentUser].conversations || {};
+    }
+    return DEFAULT_USERS['user@fitmate.vn'].conversations || {};
+  });
+
+  const handleSendFriendRequest = (targetUser) => {
+    const targetName = typeof targetUser === 'string' ? targetUser : targetUser.name;
+    const cleanTargetName = targetName.replace(/\s*\(Bạn\)/g, '').trim();
+    const myCleanName = myProfile?.name ? myProfile.name.replace(/\s*\(Bạn\)/g, '').trim() : 'Bạn';
+
+    if (sentRequests.includes(targetName) || sentRequests.includes(cleanTargetName) || friendsList.includes(targetName) || friendsList.includes(cleanTargetName)) return;
+
+    const newSent = [...sentRequests, cleanTargetName];
+    setSentRequests(newSent);
+
+    const newNotif = {
+      id: Date.now(),
+      type: 'friend_request',
+      senderName: myCleanName,
+      senderAvatar: myProfile?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=60',
+      senderRole: myProfile?.role || 'Hội viên',
+      message: `Đã gửi lời mời kết bạn đến ${cleanTargetName}.`,
+      time: 'Vừa xong',
+      read: true,
+      status: 'pending'
+    };
+    const newNotifications = [newNotif, ...notifications];
+    setNotifications(newNotifications);
+
+    setUsersDb(prevDb => {
+      const updatedDb = { ...prevDb };
+      const recipientEmail = Object.keys(updatedDb).find(em => {
+        const u = updatedDb[em];
+        const uClean = u.profile?.name?.replace(/\s*\(Bạn\)/g, '').trim();
+        return uClean === cleanTargetName || u.profile?.name === cleanTargetName;
+      });
+
+      if (recipientEmail && recipientEmail !== currentUserEmail) {
+        const recipient = updatedDb[recipientEmail];
+        const incomingReq = {
+          id: Date.now(),
+          name: myCleanName,
+          role: myProfile?.role || 'Hội viên',
+          avatar: myProfile?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=60',
+          bio: myProfile?.bio || 'Thành viên cộng đồng FitMate.',
+          time: 'Vừa xong',
+          status: 'pending'
+        };
+        const incomingNotif = {
+          id: Date.now(),
+          type: 'friend_request',
+          senderName: myCleanName,
+          senderAvatar: myProfile?.avatar,
+          senderRole: myProfile?.role,
+          message: `${myCleanName} đã gửi cho bạn một lời mời kết bạn.`,
+          time: 'Vừa xong',
+          read: false,
+          status: 'pending'
+        };
+        updatedDb[recipientEmail] = {
+          ...recipient,
+          friendRequests: [incomingReq, ...(recipient.friendRequests || [])],
+          notifications: [incomingNotif, ...(recipient.notifications || [])]
+        };
+      }
+
+      if (currentUserEmail && updatedDb[currentUserEmail]) {
+        updatedDb[currentUserEmail] = {
+          ...updatedDb[currentUserEmail],
+          sentRequests: newSent,
+          notifications: newNotifications
+        };
+      }
+
+      localStorage.setItem('fitmate_users', JSON.stringify(updatedDb));
+      return updatedDb;
+    });
+
+    showToast(`Đã gửi lời mời kết bạn tới ${cleanTargetName}! 🤝`, 'success');
+  };
+
+  const handleCancelSentRequest = (targetName) => {
+    const cleanTargetName = targetName.replace(/\s*\(Bạn\)/g, '').trim();
+    const myCleanName = myProfile?.name ? myProfile.name.replace(/\s*\(Bạn\)/g, '').trim() : 'Bạn';
+    const newSent = sentRequests.filter(name => name !== targetName && name !== cleanTargetName);
+    setSentRequests(newSent);
+
+    setUsersDb(prevDb => {
+      const updatedDb = { ...prevDb };
+      const recipientEmail = Object.keys(updatedDb).find(em => {
+        const u = updatedDb[em];
+        const uClean = u.profile?.name?.replace(/\s*\(Bạn\)/g, '').trim();
+        return uClean === cleanTargetName || u.profile?.name === cleanTargetName;
+      });
+
+      if (recipientEmail && recipientEmail !== currentUserEmail) {
+        const recipient = updatedDb[recipientEmail];
+        updatedDb[recipientEmail] = {
+          ...recipient,
+          friendRequests: (recipient.friendRequests || []).filter(r => r.name !== myCleanName && r.name !== myProfile?.name),
+          notifications: (recipient.notifications || []).filter(n => n.senderName !== myCleanName && n.senderName !== myProfile?.name)
+        };
+      }
+
+      if (currentUserEmail && updatedDb[currentUserEmail]) {
+        updatedDb[currentUserEmail] = {
+          ...updatedDb[currentUserEmail],
+          sentRequests: newSent
+        };
+      }
+
+      localStorage.setItem('fitmate_users', JSON.stringify(updatedDb));
+      return updatedDb;
+    });
+
+    showToast(`Đã hủy lời mời kết bạn với ${cleanTargetName}.`, 'orange');
+  };
+
+  const handleAcceptFriendRequest = (req) => {
+    const reqName = typeof req === 'string' ? req : req.name;
+    const cleanReqName = reqName.replace(/\s*\(Bạn\)/g, '').trim();
+    const myCleanName = myProfile?.name ? myProfile.name.replace(/\s*\(Bạn\)/g, '').trim() : 'Bạn';
+
+    const newRequests = friendRequests.filter(r => r.name !== reqName && r.name !== cleanReqName);
+    setFriendRequests(newRequests);
+
+    let newFriends = friendsList;
+    if (!friendsList.includes(cleanReqName) && !friendsList.includes(reqName)) {
+      newFriends = [...friendsList, cleanReqName];
+      setFriendsList(newFriends);
+    }
+
+    const newNotifications = notifications.map(n => {
+      if ((n.senderName === reqName || n.senderName === cleanReqName) && n.type === 'friend_request') {
+        return { ...n, status: 'accepted', read: true };
+      }
+      return n;
+    });
+
+    const acceptedNotif = {
+      id: Date.now(),
+      type: 'system',
+      title: 'Kết bạn thành công 🎉',
+      message: `Bạn và ${cleanReqName} đã trở thành bạn bè!`,
+      time: 'Vừa xong',
+      read: false
+    };
+    const finalNotifications = [acceptedNotif, ...newNotifications];
+    setNotifications(finalNotifications);
+
+    setUsersDb(prevDb => {
+      const updatedDb = { ...prevDb };
+      const senderEmail = Object.keys(updatedDb).find(em => {
+        const u = updatedDb[em];
+        const uClean = u.profile?.name?.replace(/\s*\(Bạn\)/g, '').trim();
+        return uClean === cleanReqName || u.profile?.name === cleanReqName;
+      });
+
+      if (senderEmail && senderEmail !== currentUserEmail) {
+        const sender = updatedDb[senderEmail];
+        const senderFriends = sender.friendsList || [];
+        const senderSent = sender.sentRequests || [];
+        const senderNotifs = sender.notifications || [];
+
+        const senderAcceptedNotif = {
+          id: Date.now() + 1,
+          type: 'system',
+          title: 'Lời mời được chấp nhận 🎉',
+          message: `${myCleanName} đã đồng ý lời mời kết bạn của bạn!`,
+          time: 'Vừa xong',
+          read: false
+        };
+
+        updatedDb[senderEmail] = {
+          ...sender,
+          sentRequests: senderSent.filter(s => s !== myCleanName && s !== myProfile?.name),
+          friendsList: (!senderFriends.includes(myCleanName) && !senderFriends.includes(myProfile?.name)) ? [...senderFriends, myCleanName] : senderFriends,
+          notifications: [senderAcceptedNotif, ...senderNotifs]
+        };
+      }
+
+      if (currentUserEmail && updatedDb[currentUserEmail]) {
+        updatedDb[currentUserEmail] = {
+          ...updatedDb[currentUserEmail],
+          friendRequests: newRequests,
+          friendsList: newFriends,
+          notifications: finalNotifications
+        };
+      }
+
+      localStorage.setItem('fitmate_users', JSON.stringify(updatedDb));
+      return updatedDb;
+    });
+
+    showToast(`Đã đồng ý kết bạn với ${cleanReqName}! 🎉`, 'success');
+  };
+
+  const [activeChatFriend, setActiveChatFriend] = useState(null);
+
+  const handleOpenChat = (friendName) => {
+    const targetName = typeof friendName === 'string' ? friendName : friendName?.name;
+    setSelectedProfile(null);
+    setActiveChatFriend(targetName);
+    setScreen('messenger');
+  };
+
+  const handleUnfriend = (friendName) => {
+    const cleanName = typeof friendName === 'string' ? friendName.replace(/\s*\(Bạn\)/g, '').trim() : friendName?.name?.replace(/\s*\(Bạn\)/g, '').trim();
+    const myCleanName = myProfile?.name ? myProfile.name.replace(/\s*\(Bạn\)/g, '').trim() : 'Bạn';
+    const newFriends = friendsList.filter(name => name !== friendName && name !== cleanName);
+    setFriendsList(newFriends);
+
+    setUsersDb(prevDb => {
+      const updatedDb = { ...prevDb };
+      const friendEmail = Object.keys(updatedDb).find(em => {
+        const u = updatedDb[em];
+        const uClean = u.profile?.name?.replace(/\s*\(Bạn\)/g, '').trim();
+        return uClean === cleanName || u.profile?.name === cleanName;
+      });
+
+      if (friendEmail && friendEmail !== currentUserEmail) {
+        const friendAcc = updatedDb[friendEmail];
+        updatedDb[friendEmail] = {
+          ...friendAcc,
+          friendsList: (friendAcc.friendsList || []).filter(name => name !== myCleanName && name !== myProfile?.name)
+        };
+      }
+
+      if (currentUserEmail && updatedDb[currentUserEmail]) {
+        updatedDb[currentUserEmail] = {
+          ...updatedDb[currentUserEmail],
+          friendsList: newFriends
+        };
+      }
+
+      localStorage.setItem('fitmate_users', JSON.stringify(updatedDb));
+      return updatedDb;
+    });
+
+    showToast(`Đã hủy kết bạn với ${cleanName}.`, 'orange');
+  };
+
+  const handleRejectFriendRequest = (req) => {
+    const reqName = typeof req === 'string' ? req : req.name;
+    const cleanReqName = reqName.replace(/\s*\(Bạn\)/g, '').trim();
+    const myCleanName = myProfile?.name ? myProfile.name.replace(/\s*\(Bạn\)/g, '').trim() : 'Bạn';
+
+    const newRequests = friendRequests.filter(r => r.name !== reqName && r.name !== cleanReqName);
+    setFriendRequests(newRequests);
+
+    const newNotifications = notifications.map(n => {
+      if ((n.senderName === reqName || n.senderName === cleanReqName) && n.type === 'friend_request') {
+        return { ...n, status: 'rejected', read: true };
+      }
+      return n;
+    });
+    setNotifications(newNotifications);
+
+    setUsersDb(prevDb => {
+      const updatedDb = { ...prevDb };
+      const senderEmail = Object.keys(updatedDb).find(em => {
+        const u = updatedDb[em];
+        const uClean = u.profile?.name?.replace(/\s*\(Bạn\)/g, '').trim();
+        return uClean === cleanReqName || u.profile?.name === cleanReqName;
+      });
+
+      if (senderEmail && senderEmail !== currentUserEmail) {
+        const sender = updatedDb[senderEmail];
+        updatedDb[senderEmail] = {
+          ...sender,
+          sentRequests: (sender.sentRequests || []).filter(s => s !== myCleanName && s !== myProfile?.name)
+        };
+      }
+
+      if (currentUserEmail && updatedDb[currentUserEmail]) {
+        updatedDb[currentUserEmail] = {
+          ...updatedDb[currentUserEmail],
+          friendRequests: newRequests,
+          notifications: newNotifications
+        };
+      }
+
+      localStorage.setItem('fitmate_users', JSON.stringify(updatedDb));
+      return updatedDb;
+    });
+
+    showToast(`Đã từ chối lời mời kết bạn.`, 'orange');
+  };
+
+  const handleSendMessageCrossUser = (friendName, newMsg) => {
+    const cleanFriendName = typeof friendName === 'string' ? friendName.replace(/\s*\(Bạn\)/g, '').trim() : friendName?.name?.replace(/\s*\(Bạn\)/g, '').trim();
+    const myCleanName = myProfile?.name ? myProfile.name.replace(/\s*\(Bạn\)/g, '').trim() : 'Bạn';
+
+    setUsersDb(prevDb => {
+      const updatedDb = { ...prevDb };
+      const recipientEmail = Object.keys(updatedDb).find(em => {
+        const u = updatedDb[em];
+        const uClean = u.profile?.name?.replace(/\s*\(Bạn\)/g, '').trim();
+        return uClean === cleanFriendName || u.profile?.name === cleanFriendName;
+      });
+
+      if (recipientEmail && recipientEmail !== currentUserEmail) {
+        const recipient = updatedDb[recipientEmail];
+        const recipientConvs = recipient.conversations || {};
+        const thread = recipientConvs[myCleanName] || [];
+        const incomingMsg = {
+          ...newMsg,
+          sender: 'friend'
+        };
+        updatedDb[recipientEmail] = {
+          ...recipient,
+          conversations: {
+            ...recipientConvs,
+            [myCleanName]: [...thread, incomingMsg]
+          }
+        };
+        localStorage.setItem('fitmate_users', JSON.stringify(updatedDb));
+      }
+      return updatedDb;
+    });
+  };
+
   // Session Helper to load state for logged-in user
   const loadUserSession = (email, currentDb = usersDb) => {
     const user = currentDb[email];
     if (user) {
       setMyProfile(user.profile);
-      setStreak(user.streak !== undefined ? user.streak : 7);
-      setRewardPoints(user.rewardPoints !== undefined ? user.rewardPoints : 250);
+      setStreak(user.streak !== undefined ? user.streak : (user.profile?.isPt ? 15 : 7));
+      setRewardPoints(user.rewardPoints !== undefined ? user.rewardPoints : (user.profile?.isPt ? 500 : 250));
       setCaloriesConsumed(user.caloriesConsumed !== undefined ? user.caloriesConsumed : 1250);
       setCaloriesBurned(user.caloriesBurned !== undefined ? user.caloriesBurned : 0);
       setWorkoutSummary(user.workoutSummary !== undefined ? user.workoutSummary : null);
       setAppointments(user.appointments || []);
       setAiChats(user.aiChats || []);
+      setNotifications(user.notifications || []);
+      setFriendRequests(user.friendRequests || []);
+      setSentRequests(user.sentRequests || []);
+      setFriendsList(user.friendsList || []);
+      setConversations(user.conversations || {});
       setCurrentUserEmail(email);
       localStorage.setItem('fitmate_current_user', email);
       setIsAuthenticated(true);
@@ -357,14 +878,17 @@ export default function App() {
     const isPt = userData.isPt || false;
     const newProfile = {
       ...userData,
-      bio: isPt ? `HLV chuyên nghiệp. Chuyên môn: ${userData.spec?.join(', ') || ''}. ${userData.exp || ''}.` : userData.goal,
+      bio: isPt ? `HLV chuyên nghiệp. Chuyên môn: ${userData.spec?.join(', ') || ''}. ${userData.exp || ''}.` : (userData.goal || 'Thành viên mới của FitMate.'),
       name: userData.name + ' (Bạn)',
       role: isPt ? 'Huấn luyện viên' : 'Hội viên',
       avatar: isPt ? 'https://images.unsplash.com/photo-1548690312-e3b507d8c110?w=150&auto=format&fit=crop&q=60' : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=60',
       isPt: isPt,
       isSelf: true,
-      isVerified: isPt ? false : undefined,
-      verificationStatus: isPt ? 'Chờ duyệt chứng chỉ' : undefined
+      medicalCondition: 'Không có',
+      allergies: 'Không có',
+      trainingDays: isPt ? ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'] : ['Thứ 2', 'Thứ 4', 'Thứ 6'],
+      trainingTime: isPt ? '08:00 AM - 09:00 PM' : '06:00 PM - 08:00 PM',
+      trainingTimes: isPt ? ['08:00 AM - 09:00 PM'] : ['06:00 PM - 08:00 PM']
     };
 
     const newUser = {
@@ -383,7 +907,21 @@ export default function App() {
           title: isPt ? "Trợ lý HLV 🤸‍♂️" : "Tư vấn dinh dưỡng 🍳",
           messages: [{ id: 1, text: isPt ? `Chào HLV ${userData.name}! Tớ có thể hỗ trợ gì về giáo án hôm nay?` : `Chào ${userData.name}! Mình có thể giúp gì về thực đơn dinh dưỡng hôm nay?`, sender: 'buddy' }]
         }
-      ]
+      ],
+      notifications: [
+        {
+          id: 1,
+          type: 'welcome',
+          title: 'Chào mừng gia nhập FitMate 🎉',
+          message: `Chào ${userData.name}, chúc bạn có hành trình tập luyện tuyệt vời!`,
+          time: 'Vừa xong',
+          read: false
+        }
+      ],
+      friendRequests: [],
+      sentRequests: [],
+      friendsList: [],
+      conversations: {}
     };
 
     setUsersDb(prev => {
@@ -412,14 +950,35 @@ export default function App() {
             caloriesBurned,
             workoutSummary,
             appointments,
-            aiChats
+            aiChats,
+            notifications,
+            friendRequests,
+            sentRequests,
+            friendsList,
+            conversations
           }
         };
         localStorage.setItem('fitmate_users', JSON.stringify(updated));
         return updated;
       });
     }
-  }, [myProfile, streak, rewardPoints, caloriesConsumed, caloriesBurned, workoutSummary, appointments, aiChats, currentUserEmail, isAuthenticated]);
+  }, [
+    myProfile,
+    streak,
+    rewardPoints,
+    caloriesConsumed,
+    caloriesBurned,
+    workoutSummary,
+    appointments,
+    aiChats,
+    notifications,
+    friendRequests,
+    sentRequests,
+    friendsList,
+    conversations,
+    currentUserEmail,
+    isAuthenticated
+  ]);
 
   // Load session on mount if already logged in
   useEffect(() => {
@@ -627,23 +1186,84 @@ export default function App() {
 
   // Profile opening handler
   const handleOpenProfile = (profileSummary) => {
-    const name = profileSummary.name;
-    if (name.includes('Bạn') || name.toLowerCase() === 'hùng' || profileSummary.isSelf || name === myProfile.name) {
-      setSelectedProfile(myProfile);
-    } else if (mockProfiles[name]) {
-      setSelectedProfile(mockProfiles[name]);
-    } else {
+    if (!profileSummary) return;
+    const name = typeof profileSummary === 'string' ? profileSummary : (profileSummary.name || '');
+    if (!name) return;
+
+    const myCleanName = myProfile?.name ? myProfile.name.replace(/\s*\(Bạn\)/g, '').trim() : '';
+    const targetCleanName = name.replace(/\s*\(Bạn\)/g, '').trim();
+
+    // Check if opening own profile
+    const isOpeningSelf = (profileSummary.isSelf === true && !profileSummary.name) ||
+                          name === myProfile?.name || 
+                          (myCleanName && targetCleanName.toLowerCase() === myCleanName.toLowerCase());
+
+    if (isOpeningSelf) {
+      setSelectedProfile({ ...myProfile, isSelf: true });
+      return;
+    }
+
+    // Check in usersDb for registered user (e.g. user@fitmate.vn, pt@fitmate.vn)
+    const dbEmail = Object.keys(usersDb || {}).find(em => {
+      const u = usersDb[em];
+      const uClean = u.profile?.name?.replace(/\s*\(Bạn\)/g, '').trim().toLowerCase();
+      return uClean === targetCleanName.toLowerCase() || u.profile?.name?.toLowerCase() === targetCleanName.toLowerCase();
+    });
+
+    if (dbEmail && dbEmail !== currentUserEmail && usersDb[dbEmail]?.profile) {
+      const otherProf = usersDb[dbEmail].profile;
       setSelectedProfile({
-        name: name,
-        role: profileSummary.role || 'Thành viên',
-        avatar: profileSummary.avatar,
-        bio: 'Thành viên của cộng đồng FitMate.',
-        phone: 'Chưa cập nhật',
-        birthday: 'Chưa cập nhật',
-        gender: 'Khác',
-        isPt: profileSummary.isPt,
+        ...otherProf,
+        name: otherProf.name.replace(/\s*\(Bạn\)/g, '').trim(),
         isSelf: false
       });
+      return;
+    }
+
+    // Check mock profiles
+    if (mockProfiles[name]) {
+      setSelectedProfile({ ...mockProfiles[name], isSelf: false });
+    } else if (mockProfiles[targetCleanName]) {
+      setSelectedProfile({ ...mockProfiles[targetCleanName], isSelf: false });
+    } else {
+      // Find in ALL_SYSTEM_USERS
+      const sysUser = (ALL_SYSTEM_USERS || []).find(u => 
+        u.name === name || 
+        u.name === targetCleanName || 
+        u.name.toLowerCase() === targetCleanName.toLowerCase()
+      );
+
+      if (sysUser) {
+        setSelectedProfile({
+          name: sysUser.name,
+          role: sysUser.role || (sysUser.isPt ? 'Huấn luyện viên' : 'Thành viên'),
+          avatar: sysUser.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=60',
+          bio: sysUser.bio || 'Thành viên của cộng đồng FitMate.',
+          phone: sysUser.phone || 'Chưa cập nhật',
+          birthday: sysUser.birthday || 'Chưa cập nhật',
+          gender: sysUser.gender || 'Khác',
+          height: sysUser.height || '175 cm',
+          weight: sysUser.weight || '70 kg',
+          isPt: !!sysUser.isPt,
+          spec: sysUser.spec || [],
+          exp: sysUser.exp,
+          price: sysUser.price,
+          isVerified: sysUser.isVerified,
+          isSelf: false
+        });
+      } else {
+        setSelectedProfile({
+          name: targetCleanName,
+          role: profileSummary.role || (profileSummary.isPt ? 'Huấn luyện viên' : 'Thành viên'),
+          avatar: profileSummary.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=60',
+          bio: profileSummary.bio || 'Thành viên của cộng đồng FitMate.',
+          phone: profileSummary.phone || 'Chưa cập nhật',
+          birthday: profileSummary.birthday || 'Chưa cập nhật',
+          gender: profileSummary.gender || 'Khác',
+          isPt: !!profileSummary.isPt,
+          isSelf: false
+        });
+      }
     }
   };
 
@@ -689,6 +1309,12 @@ export default function App() {
           appointments={appointments}
           setAppointments={setAppointments}
           myProfile={myProfile}
+          friendsList={friendsList}
+          sentRequests={sentRequests}
+          onSendFriendRequest={handleSendFriendRequest}
+          onCancelSentRequest={handleCancelSentRequest}
+          onUnfriend={handleUnfriend}
+          onOpenChat={handleOpenChat}
         />
       );
     }
@@ -716,6 +1342,18 @@ export default function App() {
             workoutState={workoutState}
             setWorkoutState={setWorkoutState}
             onUpdateProfile={handleUpdateMyProfile}
+            notifications={notifications}
+            setNotifications={setNotifications}
+            friendRequests={friendRequests}
+            setFriendRequests={setFriendRequests}
+            sentRequests={sentRequests}
+            friendsList={friendsList}
+            onSendFriendRequest={handleSendFriendRequest}
+            onCancelSentRequest={handleCancelSentRequest}
+            onAcceptFriendRequest={handleAcceptFriendRequest}
+            onRejectFriendRequest={handleRejectFriendRequest}
+            onUnfriend={handleUnfriend}
+            onOpenChat={handleOpenChat}
           />
         );
       case 'nutrition':
@@ -769,6 +1407,13 @@ export default function App() {
             setScreen={handleTabSwitch}
             myProfile={myProfile}
             currentUserEmail={currentUserEmail}
+            friendsList={friendsList}
+            activeChatFriend={activeChatFriend}
+            setActiveChatFriend={setActiveChatFriend}
+            onOpenProfile={handleOpenProfile}
+            conversations={conversations}
+            setConversations={setConversations}
+            onSendMessageCrossUser={handleSendMessageCrossUser}
           />
         );
       case 'appointments':

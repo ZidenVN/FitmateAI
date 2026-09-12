@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Flame, Trophy, ArrowUpRight, TrendingUp, Zap, Menu, X, User, LogOut, Check, MessageCircle, Calendar, HeartPulse, Mail } from 'lucide-react';
+import { Flame, Trophy, ArrowUpRight, TrendingUp, Zap, Menu, X, User, LogOut, Check, MessageCircle, Calendar, HeartPulse, Mail, Bell, Search, UserPlus, UserCheck, Users } from 'lucide-react';
+import NotificationsModal from './NotificationsModal';
+import FriendRequestsModal from './FriendRequestsModal';
+import UserSearchModal from './UserSearchModal';
 
 export default function Dashboard({ 
   streak, 
@@ -20,7 +23,19 @@ export default function Dashboard({
   setDietState,
   workoutState,
   setWorkoutState,
-  onUpdateProfile
+  onUpdateProfile,
+  notifications = [],
+  setNotifications,
+  friendRequests = [],
+  setFriendRequests,
+  sentRequests = [],
+  friendsList = [],
+  onSendFriendRequest,
+  onCancelSentRequest,
+  onAcceptFriendRequest,
+  onRejectFriendRequest,
+  onUnfriend,
+  onOpenChat
 }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [isFizzing, setIsFizzing] = useState(false);
@@ -28,6 +43,9 @@ export default function Dashboard({
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [showVipModal, setShowVipModal] = useState(false);
   const [showSupportModal, setShowSupportModal] = useState(false);
+  const [showNotificationsModal, setShowNotificationsModal] = useState(false);
+  const [showFriendRequestsModal, setShowFriendRequestsModal] = useState(false);
+  const [showUserSearchModal, setShowUserSearchModal] = useState(false);
   const [trophyTab, setTrophyTab] = useState('voucher'); // 'voucher' or 'withdraw'
   
   // Withdraw modal states
@@ -92,8 +110,12 @@ export default function Dashboard({
     }
   };
 
+  const unreadNotifsCount = (notifications || []).filter(n => !n.read).length;
+  const pendingRequestsCount = (friendRequests || []).filter(r => r.status === 'pending').length;
+  const isAnyModalOpen = showWithdrawModal || showVipModal || showSupportModal || showNotificationsModal || showFriendRequestsModal || showUserSearchModal;
+
   return (
-    <div className="screen-content animate-slide-up" style={{ position: 'relative' }}>
+    <div className="screen-content animate-slide-up" style={{ position: 'relative', overflowY: isAnyModalOpen ? 'hidden' : 'auto' }}>
       
       {/* Drawer Sidebar Menu */}
       {drawerOpen && (
@@ -176,6 +198,68 @@ export default function Dashboard({
               <button 
                 onClick={() => {
                   setDrawerOpen(false);
+                  setShowUserSearchModal(true);
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  background: 'none',
+                  border: 'none',
+                  color: 'white',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  padding: '8px 4px',
+                  width: '100%',
+                  textAlign: 'left'
+                }}
+              >
+                <Search size={16} color="var(--accent-green)" />
+                Tìm bạn bè & HLV
+              </button>
+
+              <button 
+                onClick={() => {
+                  setDrawerOpen(false);
+                  setShowFriendRequestsModal(true);
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  background: 'none',
+                  border: 'none',
+                  color: 'white',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  padding: '8px 4px',
+                  width: '100%',
+                  textAlign: 'left'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <Users size={16} color="var(--accent-green)" />
+                  <span>Bạn bè</span>
+                </div>
+                {pendingRequestsCount > 0 && (
+                  <span style={{
+                    fontSize: '9.5px',
+                    background: 'var(--accent-orange)',
+                    color: 'white',
+                    fontWeight: 800,
+                    padding: '1px 6px',
+                    borderRadius: '8px'
+                  }}>
+                    {pendingRequestsCount}
+                  </span>
+                )}
+              </button>
+
+              <button 
+                onClick={() => {
+                  setDrawerOpen(false);
                   if (setScreen) setScreen('messenger');
                 }}
                 style={{
@@ -219,30 +303,6 @@ export default function Dashboard({
               >
                 <Calendar size={16} color="var(--accent-green)" />
                 Lịch hẹn
-              </button>
-
-              <button 
-                onClick={() => {
-                  setDrawerOpen(false);
-                  if (setScreen) setScreen('chuyen-sau');
-                }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  background: 'none',
-                  border: 'none',
-                  color: 'white',
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  padding: '8px 4px',
-                  width: '100%',
-                  textAlign: 'left'
-                }}
-              >
-                <HeartPulse size={16} color="var(--accent-green)" />
-                Chuyên sâu
               </button>
 
               <button 
@@ -303,12 +363,18 @@ export default function Dashboard({
                   border: 'none',
                   color: 'var(--text-secondary)',
                   fontSize: '13px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  padding: '8px 4px',
                   width: '100%',
-                  textAlign: 'left',
-                  marginTop: 'auto'
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  padding: '12px 14px',
+                  background: 'rgba(255, 87, 34, 0.08)',
+                  border: '1px solid rgba(255, 87, 34, 0.2)',
+                  borderRadius: '12px',
+                  color: 'var(--accent-orange)',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  cursor: 'pointer'
                 }}
               >
                 <LogOut size={16} />
@@ -344,7 +410,51 @@ export default function Dashboard({
             <p className="subtitle">Chào mừng trở lại, {myProfile?.name?.replace('(Bạn)', '').trim() || 'Hội viên'} 👋</p>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          {/* Notification Bell Icon */}
+          <div 
+            className="glass-card" 
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              width: '40px', 
+              height: '40px', 
+              minWidth: '40px',
+              minHeight: '40px',
+              padding: 0,
+              borderRadius: '12px',
+              position: 'relative',
+              cursor: 'pointer',
+              borderColor: unreadNotifsCount > 0 ? 'rgba(57, 255, 20, 0.5)' : 'var(--border-color)',
+              background: unreadNotifsCount > 0 ? 'rgba(57, 255, 20, 0.12)' : 'rgba(255, 255, 255, 0.03)'
+            }} 
+            onClick={() => setShowNotificationsModal(true)}
+          >
+            <Bell size={22} color="var(--accent-green)" strokeWidth={2.2} />
+            {unreadNotifsCount > 0 && (
+              <span style={{
+                position: 'absolute',
+                top: '-4px',
+                right: '-4px',
+                background: 'var(--accent-orange)',
+                color: 'white',
+                fontSize: '9.5px',
+                fontWeight: 800,
+                minWidth: '17px',
+                height: '17px',
+                borderRadius: '9px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '0 3px',
+                boxShadow: '0 0 8px rgba(255, 87, 34, 0.7)'
+              }}>
+                {unreadNotifsCount}
+              </span>
+            )}
+          </div>
+
           {/* Streak Badge */}
           <div className="glass-card" style={{ 
             display: 'flex', 
@@ -1190,6 +1300,51 @@ export default function Dashboard({
             </button>
           </div>
         </div>
+      )}
+
+      {/* Notifications Modal */}
+      {showNotificationsModal && (
+        <NotificationsModal
+          notifications={notifications}
+          setNotifications={setNotifications}
+          onClose={() => setShowNotificationsModal(false)}
+          onAcceptRequest={onAcceptFriendRequest}
+          onRejectRequest={onRejectFriendRequest}
+          onOpenFriendRequests={() => setShowFriendRequestsModal(true)}
+          onOpenProfile={onOpenProfile}
+          showToast={showToast}
+        />
+      )}
+
+      {/* Friend Requests Modal */}
+      {showFriendRequestsModal && (
+        <FriendRequestsModal
+          friendRequests={friendRequests}
+          friendsList={friendsList}
+          sentRequests={sentRequests}
+          onClose={() => setShowFriendRequestsModal(false)}
+          onAcceptRequest={onAcceptFriendRequest}
+          onRejectRequest={onRejectFriendRequest}
+          onCancelSentRequest={onCancelSentRequest}
+          onOpenProfile={onOpenProfile}
+          onOpenSearchUsers={() => setShowUserSearchModal(true)}
+          onOpenChat={onOpenChat}
+          showToast={showToast}
+        />
+      )}
+
+      {/* User Search Modal */}
+      {showUserSearchModal && (
+        <UserSearchModal
+          onClose={() => setShowUserSearchModal(false)}
+          onOpenProfile={onOpenProfile}
+          onSendFriendRequest={onSendFriendRequest}
+          onCancelSentRequest={onCancelSentRequest}
+          sentRequests={sentRequests}
+          friendsList={friendsList}
+          myProfile={myProfile}
+          showToast={showToast}
+        />
       )}
 
     </div>

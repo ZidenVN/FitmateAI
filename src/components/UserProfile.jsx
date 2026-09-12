@@ -1,7 +1,23 @@
 import React, { useState } from 'react';
-import { ArrowLeft, MessageCircle, UserPlus, Star, Award, Heart, Flame, Smile, Check, X } from 'lucide-react';
+import { ArrowLeft, MessageCircle, UserPlus, UserX, Star, Award, Heart, Flame, Smile, Check, X, HeartPulse, ArrowRight, Clock } from 'lucide-react';
+import ChuyenSau from './ChuyenSau';
 
-export default function UserProfile({ profile, onClose, posts, onUpdateProfile, showToast, appointments, setAppointments, myProfile }) {
+export default function UserProfile({ 
+  profile, 
+  onClose, 
+  posts, 
+  onUpdateProfile, 
+  showToast, 
+  appointments, 
+  setAppointments, 
+  myProfile,
+  friendsList = [],
+  sentRequests = [],
+  onSendFriendRequest,
+  onCancelSentRequest,
+  onUnfriend,
+  onOpenChat
+}) {
   const mockReviews = {
     'Mai Xuân Tú': [
       { id: 1, student: 'Nguyễn Đào Tùng Lâm', rating: 5, comment: 'HLV chuyên môn cực tốt, hướng dẫn kỹ thuật Calisthenics rất bài bản, nhiệt tình.', date: '3 ngày trước' },
@@ -15,10 +31,80 @@ export default function UserProfile({ profile, onClose, posts, onUpdateProfile, 
   };
 
   const [isEditing, setIsEditing] = useState(false);
+  const [showChuyenSau, setShowChuyenSau] = useState(false);
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [bookingDate, setBookingDate] = useState('');
   const [bookingTime, setBookingTime] = useState('09:00');
   
+  // Parse initial trainingTime if available
+  const parseTime = (timeStr) => {
+    if (!timeStr) return { startH: '08', startM: '00', startAP: 'AM', endH: '09', endM: '00', endAP: 'PM' };
+    
+    // Check range format "08:00 AM - 09:00 PM" or "08:00 - 21:00"
+    const matchRange = timeStr.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?\s*-\s*(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+    if (matchRange) {
+      let sH = parseInt(matchRange[1], 10);
+      let sM = matchRange[2];
+      let sAP = matchRange[3] ? matchRange[3].toUpperCase() : (sH >= 12 ? 'PM' : 'AM');
+      let displaySH = matchRange[3] ? sH : (sH > 12 ? sH - 12 : (sH === 0 ? 12 : sH));
+
+      let eH = parseInt(matchRange[4], 10);
+      let eM = matchRange[5];
+      let eAP = matchRange[6] ? matchRange[6].toUpperCase() : (eH >= 12 ? 'PM' : 'AM');
+      let displayEH = matchRange[6] ? eH : (eH > 12 ? eH - 12 : (eH === 0 ? 12 : eH));
+
+      return {
+        startH: String(displaySH).padStart(2, '0'),
+        startM: sM,
+        startAP: sAP,
+        endH: String(displayEH).padStart(2, '0'),
+        endM: eM,
+        endAP: eAP
+      };
+    }
+
+    // Check single format "08:00" or "08:00 AM" or "18:00"
+    const matchSingle = timeStr.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+    if (matchSingle) {
+      let h = parseInt(matchSingle[1], 10);
+      let ap = matchSingle[3] ? matchSingle[3].toUpperCase() : (h >= 12 ? 'PM' : 'AM');
+      let displayH = matchSingle[3] ? h : (h > 12 ? h - 12 : (h === 0 ? 12 : h));
+      return {
+        startH: String(displayH).padStart(2, '0'),
+        startM: matchSingle[2],
+        startAP: ap,
+        endH: '09',
+        endM: '00',
+        endAP: 'PM'
+      };
+    }
+
+    return { startH: '08', startM: '00', startAP: 'AM', endH: '09', endM: '00', endAP: 'PM' };
+  };
+
+  const initialTime = parseTime(profile.trainingTime || (profile.trainingTimes && profile.trainingTimes[0]));
+  const [editStartHour, setEditStartHour] = useState(initialTime.startH);
+  const [editStartMinute, setEditStartMinute] = useState(initialTime.startM);
+  const [editStartAmPm, setEditStartAmPm] = useState(initialTime.startAP);
+  const [editEndHour, setEditEndHour] = useState(initialTime.endH);
+  const [editEndMinute, setEditEndMinute] = useState(initialTime.endM);
+  const [editEndAmPm, setEditEndAmPm] = useState(initialTime.endAP);
+
+  // Available days state
+  const defaultDays = profile.trainingDays && profile.trainingDays.length > 0 
+    ? profile.trainingDays 
+    : (profile.isPt ? ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'] : ['Thứ 2', 'Thứ 4', 'Thứ 6']);
+  const [editDays, setEditDays] = useState(defaultDays);
+
+  const toggleDay = (day) => {
+    if (editDays.includes(day)) {
+      if (editDays.length === 1) return; // Keep at least 1 day
+      setEditDays(editDays.filter(d => d !== day));
+    } else {
+      setEditDays([...editDays, day]);
+    }
+  };
+
   // Local edit states
   const [editBio, setEditBio] = useState(profile.bio || '');
   const [editPhone, setEditPhone] = useState(profile.phone || '');
@@ -92,13 +178,17 @@ export default function UserProfile({ profile, onClose, posts, onUpdateProfile, 
   const handleSaveEdit = (e) => {
     e.preventDefault();
     if (onUpdateProfile) {
+      const formattedTrainingTime = `${editStartHour}:${editStartMinute} ${editStartAmPm} - ${editEndHour}:${editEndMinute} ${editEndAmPm}`;
       const updatedFields = {
         bio: editBio,
         phone: editPhone,
         birthday: editBirthday,
         gender: editGender,
         height: editHeight,
-        weight: editWeight
+        weight: editWeight,
+        trainingTime: formattedTrainingTime,
+        trainingTimes: [formattedTrainingTime],
+        trainingDays: editDays
       };
 
       if (profile.isPt) {
@@ -435,6 +525,161 @@ export default function UserProfile({ profile, onClose, posts, onUpdateProfile, 
               </>
             )}
 
+            {/* Days of Week Selector */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                {profile.isPt ? 'Ngày đứng lớp trong tuần:' : 'Ngày tập trong tuần:'}
+              </label>
+              <div style={{ display: 'flex', gap: '4px', width: '100%' }}>
+                {[
+                  { label: 'T2', full: 'Thứ 2' },
+                  { label: 'T3', full: 'Thứ 3' },
+                  { label: 'T4', full: 'Thứ 4' },
+                  { label: 'T5', full: 'Thứ 5' },
+                  { label: 'T6', full: 'Thứ 6' },
+                  { label: 'T7', full: 'Thứ 7' },
+                  { label: 'CN', full: 'Chủ Nhật' }
+                ].map(d => {
+                  const isSelected = editDays.includes(d.full);
+                  return (
+                    <button
+                      key={d.full}
+                      type="button"
+                      onClick={() => toggleDay(d.full)}
+                      style={{
+                        flex: 1,
+                        padding: '6px 0',
+                        borderRadius: '8px',
+                        border: isSelected ? '1px solid var(--accent-green)' : '1px solid var(--border-color)',
+                        background: isSelected ? 'rgba(57, 255, 20, 0.15)' : 'rgba(255, 255, 255, 0.03)',
+                        color: isSelected ? 'var(--accent-green)' : 'var(--text-secondary)',
+                        fontWeight: isSelected ? 800 : 500,
+                        fontSize: '11px',
+                        cursor: 'pointer',
+                        textAlign: 'center'
+                      }}
+                    >
+                      {d.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Training Time / Available Slots Input - SINGLE ROW */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                {profile.isPt ? 'Giờ đứng lớp trống:' : 'Khung giờ tập:'}
+              </label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', width: '100%' }}>
+                {/* Start Time */}
+                <div style={{
+                  flex: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '2px',
+                  background: 'rgba(255, 255, 255, 0.03)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '10px',
+                  padding: '6px 4px'
+                }}>
+                  <select 
+                    value={editStartHour} 
+                    onChange={(e) => setEditStartHour(e.target.value)}
+                    style={{ background: 'transparent', border: 'none', color: 'white', fontSize: '11.5px', fontWeight: 700, outline: 'none', cursor: 'pointer', padding: 0 }}
+                  >
+                    {['01','02','03','04','05','06','07','08','09','10','11','12'].map(h => (
+                      <option key={h} value={h} style={{ background: '#161c22', color: 'white' }}>{h}</option>
+                    ))}
+                  </select>
+                  <span style={{ color: 'var(--text-secondary)', fontWeight: 700, fontSize: '11px' }}>:</span>
+                  <select 
+                    value={editStartMinute} 
+                    onChange={(e) => setEditStartMinute(e.target.value)}
+                    style={{ background: 'transparent', border: 'none', color: 'white', fontSize: '11.5px', fontWeight: 700, outline: 'none', cursor: 'pointer', padding: 0 }}
+                  >
+                    {['00','15','30','45'].map(m => (
+                      <option key={m} value={m} style={{ background: '#161c22', color: 'white' }}>{m}</option>
+                    ))}
+                  </select>
+                  <select 
+                    value={editStartAmPm} 
+                    onChange={(e) => setEditStartAmPm(e.target.value)}
+                    style={{ 
+                      background: 'rgba(57, 255, 20, 0.12)', 
+                      border: '1px solid rgba(57, 255, 20, 0.3)', 
+                      borderRadius: '6px', 
+                      color: 'var(--accent-green)', 
+                      fontSize: '10.5px', 
+                      fontWeight: 800, 
+                      padding: '1px 3px', 
+                      outline: 'none', 
+                      cursor: 'pointer',
+                      marginLeft: '2px'
+                    }}
+                  >
+                    <option value="AM" style={{ background: '#161c22', color: 'white' }}>AM</option>
+                    <option value="PM" style={{ background: '#161c22', color: 'white' }}>PM</option>
+                  </select>
+                </div>
+
+                <span style={{ color: 'var(--text-secondary)', fontSize: '11px', fontWeight: 600, flexShrink: 0 }}>đến</span>
+
+                {/* End Time */}
+                <div style={{
+                  flex: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '2px',
+                  background: 'rgba(255, 255, 255, 0.03)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '10px',
+                  padding: '6px 4px'
+                }}>
+                  <select 
+                    value={editEndHour} 
+                    onChange={(e) => setEditEndHour(e.target.value)}
+                    style={{ background: 'transparent', border: 'none', color: 'white', fontSize: '11.5px', fontWeight: 700, outline: 'none', cursor: 'pointer', padding: 0 }}
+                  >
+                    {['01','02','03','04','05','06','07','08','09','10','11','12'].map(h => (
+                      <option key={h} value={h} style={{ background: '#161c22', color: 'white' }}>{h}</option>
+                    ))}
+                  </select>
+                  <span style={{ color: 'var(--text-secondary)', fontWeight: 700, fontSize: '11px' }}>:</span>
+                  <select 
+                    value={editEndMinute} 
+                    onChange={(e) => setEditEndMinute(e.target.value)}
+                    style={{ background: 'transparent', border: 'none', color: 'white', fontSize: '11.5px', fontWeight: 700, outline: 'none', cursor: 'pointer', padding: 0 }}
+                  >
+                    {['00','15','30','45'].map(m => (
+                      <option key={m} value={m} style={{ background: '#161c22', color: 'white' }}>{m}</option>
+                    ))}
+                  </select>
+                  <select 
+                    value={editEndAmPm} 
+                    onChange={(e) => setEditEndAmPm(e.target.value)}
+                    style={{ 
+                      background: 'rgba(57, 255, 20, 0.12)', 
+                      border: '1px solid rgba(57, 255, 20, 0.3)', 
+                      borderRadius: '6px', 
+                      color: 'var(--accent-green)', 
+                      fontSize: '10.5px', 
+                      fontWeight: 800, 
+                      padding: '1px 3px', 
+                      outline: 'none', 
+                      cursor: 'pointer',
+                      marginLeft: '2px'
+                    }}
+                  >
+                    <option value="AM" style={{ background: '#161c22', color: 'white' }}>AM</option>
+                    <option value="PM" style={{ background: '#161c22', color: 'white' }}>PM</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
             <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
               <button 
                 type="button" 
@@ -457,7 +702,7 @@ export default function UserProfile({ profile, onClose, posts, onUpdateProfile, 
           /* Static Display Mode */
           <>
             {/* User Stats & Description */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '14px' }}>
               <div>
                 <h2 className="title-large" style={{ fontSize: '20px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '6px' }}>
                   {profile.name}
@@ -488,90 +733,31 @@ export default function UserProfile({ profile, onClose, posts, onUpdateProfile, 
               </p>
 
               {profile.isPt && (
-                <>
-                  {/* PT Specific Info Card */}
-                  <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px' }}>
-                    <div style={{ display: 'flex', gap: '16px', fontSize: '12px' }}>
-                      <div>
-                        <span style={{ color: 'var(--text-secondary)' }}>Kinh nghiệm:</span>
-                        <span style={{ fontWeight: 700, marginLeft: '4px' }}>{profile.exp}</span>
-                      </div>
-                      <div>
-                        <span style={{ color: 'var(--text-secondary)' }}>Giá thuê:</span>
-                        <span style={{ fontWeight: 700, color: 'var(--accent-green)', marginLeft: '4px' }}>{profile.price}</span>
-                      </div>
+                /* PT Specific Info Card */
+                <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px' }}>
+                  <div style={{ display: 'flex', gap: '16px', fontSize: '12px' }}>
+                    <div>
+                      <span style={{ color: 'var(--text-secondary)' }}>Kinh nghiệm:</span>
+                      <span style={{ fontWeight: 700, marginLeft: '4px' }}>{profile.exp}</span>
                     </div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
-                      {profile.spec?.map((s, idx) => (
-                        <span key={idx} style={{ fontSize: '9px', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-color)', padding: '2px 6px', borderRadius: '6px' }}>
-                          {s}
-                        </span>
-                      ))}
+                    <div>
+                      <span style={{ color: 'var(--text-secondary)' }}>Giá thuê:</span>
+                      <span style={{ fontWeight: 700, color: 'var(--accent-green)', marginLeft: '4px' }}>{profile.price}</span>
                     </div>
                   </div>
-
-                  {/* Student Reviews Card */}
-                  <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '10px', padding: '12px' }}>
-                    <h4 style={{ fontSize: '13px', fontWeight: 700, borderBottom: '1px solid var(--border-color)', paddingBottom: '6px', margin: 0, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <Star size={14} fill="#ffb300" stroke="none" /> Đánh giá từ học viên ({(mockReviews[profile.name.replace(' (Bạn)', '')] || []).length})
-                    </h4>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '180px', overflowY: 'auto' }}>
-                      {(mockReviews[profile.name.replace(' (Bạn)', '')] || []).length > 0 ? (
-                        (mockReviews[profile.name.replace(' (Bạn)', '')] || []).map((rev) => (
-                          <div key={rev.id} style={{ display: 'flex', flexDirection: 'column', gap: '4px', padding: '6px 8px', background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-color)', borderRadius: '8px' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-primary)' }}>{rev.student}</span>
-                              <span style={{ fontSize: '10px', color: '#ffb300', fontWeight: 700 }}>★ {rev.rating}</span>
-                            </div>
-                            <p style={{ fontSize: '11.5px', color: 'var(--text-secondary)', margin: 0, lineHeight: '1.3' }}>{rev.comment}</p>
-                            <span style={{ fontSize: '9px', color: 'var(--text-secondary)', alignSelf: 'flex-end' }}>{rev.date}</span>
-                          </div>
-                        ))
-                      ) : (
-                        <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)', fontStyle: 'italic', textAlign: 'center', padding: '10px 0' }}>
-                          Chưa có lượt đánh giá nào dành cho HLV này.
-                        </span>
-                      )}
-                    </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
+                    {profile.spec?.map((s, idx) => (
+                      <span key={idx} style={{ fontSize: '9px', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-color)', padding: '2px 6px', borderRadius: '6px' }}>
+                        {s}
+                      </span>
+                    ))}
                   </div>
-                </>
+                </div>
               )}
-
-              {/* Action Buttons */}
-              <div style={{ display: 'flex', gap: '8px' }}>
-                {profile.isSelf ? (
-                  <button 
-                    className="btn-primary" 
-                    onClick={() => setIsEditing(true)}
-                    style={{ flex: 1 }}
-                  >
-                    Chỉnh sửa trang cá nhân
-                  </button>
-                ) : profile.isPt ? (
-                  <>
-                    <button className="btn-primary" onClick={handleBook} style={{ flex: 2 }}>
-                      Đặt lịch hẹn miễn phí
-                    </button>
-                    <button className="btn-secondary" onClick={handleConnect} style={{ padding: '12px' }}>
-                      <MessageCircle size={16} />
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button className="btn-primary" onClick={handleConnect} style={{ flex: 1 }}>
-                      <UserPlus size={16} />
-                      Kết bạn
-                    </button>
-                    <button className="btn-secondary" style={{ flex: 1 }}>
-                      Nhắn tin
-                    </button>
-                  </>
-                )}
-              </div>
             </div>
 
-            {/* Personal Details Card */}
-            <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px', fontSize: '12.5px' }}>
+            {/* Personal Details Card ("Thông tin chi tiết" - Placed above Reviews) */}
+            <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '14px', fontSize: '12.5px' }}>
               <h4 style={{ fontSize: '13px', fontWeight: 700, borderBottom: '1px solid var(--border-color)', paddingBottom: '6px', marginBottom: '4px' }}>
                 Thông tin chi tiết
               </h4>
@@ -606,11 +792,19 @@ export default function UserProfile({ profile, onClose, posts, onUpdateProfile, 
                     <span style={{ fontWeight: 600, color: 'var(--accent-green)' }}>{profile.allergies || 'Không có'}</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', flexDirection: 'column', gap: '2px' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>Ngày tập trong tuần:</span>
+                    <span style={{ fontWeight: 600 }}>
+                      {profile.trainingDays && profile.trainingDays.length > 0 
+                        ? profile.trainingDays.join(', ') 
+                        : 'Thứ 2, Thứ 4, Thứ 6'}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', flexDirection: 'column', gap: '2px' }}>
                     <span style={{ color: 'var(--text-secondary)' }}>Khung giờ tập:</span>
                     <span style={{ fontWeight: 600 }}>
                       {profile.trainingTimes && profile.trainingTimes.length > 0 
                         ? profile.trainingTimes.join(', ') 
-                        : (profile.trainingTime || 'Chưa cập nhật')}
+                        : (profile.trainingTime || '06:00 PM - 08:00 PM')}
                     </span>
                   </div>
                 </>
@@ -623,16 +817,166 @@ export default function UserProfile({ profile, onClose, posts, onUpdateProfile, 
                     </span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', flexDirection: 'column', gap: '2px' }}>
-                    <span style={{ color: 'var(--text-secondary)' }}>Giờ đứng lớp trống:</span>
+                    <span style={{ color: 'var(--text-secondary)' }}>Ngày đứng lớp trong tuần:</span>
                     <span style={{ fontWeight: 600 }}>
+                      {profile.trainingDays && profile.trainingDays.length > 0 
+                        ? profile.trainingDays.join(', ') 
+                        : 'Thứ 2, Thứ 3, Thứ 4, Thứ 5, Thứ 6, Thứ 7'}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', flexDirection: 'column', gap: '2px' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>Giờ đứng lớp trống:</span>
+                    <span style={{ fontWeight: 600, color: 'var(--accent-green)' }}>
                       {profile.trainingTimes && profile.trainingTimes.length > 0 
                         ? profile.trainingTimes.join(', ') 
-                        : (profile.trainingTime || '08:00 - 21:00')}
+                        : (profile.trainingTime || '08:00 AM - 09:00 PM')}
                     </span>
                   </div>
                 </>
               )}
             </div>
+
+            {/* Hồ sơ chuyên sâu Button (For self profiles) */}
+            {profile.isSelf && (
+              <div 
+                onClick={() => setShowChuyenSau(true)}
+                className="glass-card"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '12px 14px',
+                  borderRadius: '14px',
+                  borderColor: 'rgba(57, 255, 20, 0.3)',
+                  background: 'rgba(57, 255, 20, 0.05)',
+                  cursor: 'pointer',
+                  marginBottom: '14px'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <HeartPulse size={18} color="var(--accent-green)" />
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: 700, color: 'white' }}>Hồ sơ chuyên sâu</div>
+                    <div style={{ fontSize: '10.5px', color: 'var(--text-secondary)' }}>Bệnh nền, dị ứng & lịch hoạt động</div>
+                  </div>
+                </div>
+                <ArrowRight size={16} color="var(--accent-green)" />
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            {(() => {
+              const cleanProfileName = profile.name.replace(/\s*\(Bạn\)/g, '').trim();
+              const isFriend = (friendsList || []).some(name => name === profile.name || name.replace(/\s*\(Bạn\)/g, '').trim() === cleanProfileName);
+              const isSent = (sentRequests || []).some(name => name === profile.name || name.replace(/\s*\(Bạn\)/g, '').trim() === cleanProfileName);
+
+              return (
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
+                  {profile.isSelf ? (
+                    <button 
+                      className="btn-primary" 
+                      onClick={() => setIsEditing(true)}
+                      style={{ flex: 1 }}
+                    >
+                      Chỉnh sửa trang cá nhân
+                    </button>
+                  ) : profile.isPt ? (
+                    <>
+                      <button className="btn-primary" onClick={handleBook} style={{ flex: 1.2 }}>
+                        Đặt lịch hẹn
+                      </button>
+                      {isFriend ? (
+                        <>
+                          <button 
+                            className="btn-secondary" 
+                            onClick={() => onOpenChat && onOpenChat(profile.name)}
+                            style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', background: 'rgba(30, 117, 255, 0.12)', borderColor: 'rgba(30, 117, 255, 0.4)', color: '#4da3ff' }}
+                          >
+                            <MessageCircle size={15} /> Nhắn tin
+                          </button>
+                          <button 
+                            className="btn-secondary" 
+                            onClick={() => onUnfriend && onUnfriend(profile.name)}
+                            title="Hủy kết bạn"
+                            style={{ padding: '12px', background: 'rgba(255, 87, 34, 0.1)', color: 'var(--accent-orange)', borderColor: 'rgba(255, 87, 34, 0.3)' }}
+                          >
+                            <UserX size={15} />
+                          </button>
+                        </>
+                      ) : isSent ? (
+                        <button className="btn-secondary" onClick={() => onCancelSentRequest && onCancelSentRequest(profile.name)} style={{ padding: '12px', background: 'rgba(255, 87, 34, 0.1)', color: 'var(--accent-orange)' }}>
+                          <Clock size={16} />
+                        </button>
+                      ) : (
+                        <button className="btn-secondary" onClick={() => onSendFriendRequest && onSendFriendRequest(profile)} style={{ padding: '12px' }}>
+                          <UserPlus size={16} />
+                        </button>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      {isFriend ? (
+                        <>
+                          <button 
+                            className="btn-primary" 
+                            onClick={() => onOpenChat && onOpenChat(profile.name)}
+                            style={{ flex: 1.2, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                          >
+                            <MessageCircle size={16} />
+                            Nhắn tin
+                          </button>
+                          <button 
+                            className="btn-secondary" 
+                            onClick={() => onUnfriend && onUnfriend(profile.name)}
+                            style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', color: 'var(--accent-orange)', borderColor: 'rgba(255, 87, 34, 0.3)', background: 'rgba(255, 87, 34, 0.08)' }}
+                          >
+                            <UserX size={15} />
+                            Hủy kết bạn
+                          </button>
+                        </>
+                      ) : isSent ? (
+                        <button className="btn-secondary" onClick={() => onCancelSentRequest && onCancelSentRequest(profile.name)} style={{ flex: 1, background: 'rgba(255, 87, 34, 0.1)', color: 'var(--accent-orange)' }}>
+                          <Clock size={16} />
+                          Đã gửi lời mời
+                        </button>
+                      ) : (
+                        <button className="btn-primary" onClick={() => onSendFriendRequest && onSendFriendRequest(profile)} style={{ flex: 1 }}>
+                          <UserPlus size={16} />
+                          Kết bạn
+                        </button>
+                      )}
+                    </>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* Student Reviews Card (For PTs, now below Personal Details & Action buttons) */}
+            {profile.isPt && (
+              <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '10px', padding: '12px', marginBottom: '14px' }}>
+                <h4 style={{ fontSize: '13px', fontWeight: 700, borderBottom: '1px solid var(--border-color)', paddingBottom: '6px', margin: 0, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <Star size={14} fill="#ffb300" stroke="none" /> Đánh giá từ học viên ({(mockReviews[profile.name.replace(' (Bạn)', '')] || []).length})
+                </h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '180px', overflowY: 'auto' }}>
+                  {(mockReviews[profile.name.replace(' (Bạn)', '')] || []).length > 0 ? (
+                    (mockReviews[profile.name.replace(' (Bạn)', '')] || []).map((rev) => (
+                      <div key={rev.id} style={{ display: 'flex', flexDirection: 'column', gap: '4px', padding: '6px 8px', background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-color)', borderRadius: '8px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-primary)' }}>{rev.student}</span>
+                          <span style={{ fontSize: '10px', color: '#ffb300', fontWeight: 700 }}>★ {rev.rating}</span>
+                        </div>
+                        <p style={{ fontSize: '11.5px', color: 'var(--text-secondary)', margin: 0, lineHeight: '1.3' }}>{rev.comment}</p>
+                        <span style={{ fontSize: '9px', color: 'var(--text-secondary)', alignSelf: 'flex-end' }}>{rev.date}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)', fontStyle: 'italic', textAlign: 'center', padding: '10px 0' }}>
+                      Chưa có lượt đánh giá nào dành cho HLV này.
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* User Posts Card */}
             {userPosts && userPosts.length > 0 && (
@@ -786,6 +1130,27 @@ export default function UserProfile({ profile, onClose, posts, onUpdateProfile, 
           >
             Xác nhận đặt lịch
           </button>
+        </div>
+      )}
+
+      {/* ChuyenSau Screen Overlay */}
+      {showChuyenSau && (
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'var(--bg-dark)',
+          zIndex: 1000,
+          display: 'flex',
+          flexDirection: 'column'
+        }}>
+          <ChuyenSau 
+            myProfile={profile} 
+            onUpdateProfile={(updated) => {
+              if (onUpdateProfile) onUpdateProfile(updated);
+            }} 
+            onClose={() => setShowChuyenSau(false)} 
+            showToast={showToast} 
+          />
         </div>
       )}
     </div>

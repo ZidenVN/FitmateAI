@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Check, Edit3, Save, Plus, X } from 'lucide-react';
+import { ArrowLeft, Check, Edit3, Save, Plus, X, Clock, HeartPulse } from 'lucide-react';
 
 export default function ChuyenSau({ myProfile, onUpdateProfile, onClose, showToast }) {
   const [isEditing, setIsEditing] = useState(false);
@@ -278,8 +278,9 @@ export default function ChuyenSau({ myProfile, onUpdateProfile, onClose, showToa
                     <div style={{ position: 'relative', flex: 1 }}>
                       <Clock size={14} color="var(--text-secondary)" style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)' }} />
                       <input 
-                        type="time"
+                        type="text"
                         value={ts}
+                        placeholder="Ví dụ: 18:00 hoặc 08:00 AM - 09:00 PM"
                         onChange={(e) => {
                           const updated = timeSlots.map((time, i) => i === idx ? e.target.value : time);
                           setTimeSlots(updated);
@@ -293,8 +294,7 @@ export default function ChuyenSau({ myProfile, onUpdateProfile, onClose, showToa
                           color: 'white',
                           fontSize: '13px',
                           outline: 'none',
-                          boxSizing: 'border-box',
-                          colorScheme: 'dark'
+                          boxSizing: 'border-box'
                         }}
                       />
                     </div>
