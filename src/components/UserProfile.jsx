@@ -1,7 +1,18 @@
-import React, { useState } from 'react';
-import { ArrowLeft, MessageCircle, UserPlus, UserX, Star, Award, Heart, Flame, Smile, Check, X, HeartPulse, ArrowRight, Clock, ShieldCheck } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { ArrowLeft, MessageCircle, UserPlus, UserX, Star, Award, Heart, Flame, Smile, Check, X, HeartPulse, ArrowRight, Clock, ShieldCheck, Pencil, Edit3, Camera, Trash2, Eye, Sparkles } from 'lucide-react';
 import ChuyenSau from './ChuyenSau';
 import PTCertificatesModal from './PTCertificatesModal';
+
+const AVATAR_PRESETS = [
+  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=300&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=300&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1568602471122-7832951cc4c5?w=300&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=300&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&auto=format&fit=crop&q=80'
+];
+
+const DEFAULT_AVATAR = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=60';
 
 export default function UserProfile({ 
   profile, 
@@ -35,6 +46,9 @@ export default function UserProfile({
   const [showChuyenSau, setShowChuyenSau] = useState(false);
   const [showCertificates, setShowCertificates] = useState(false);
   const [showBookingModal, setShowBookingModal] = useState(false);
+  const [showAvatarModal, setShowAvatarModal] = useState(false);
+  const [showPresetPicker, setShowPresetPicker] = useState(false);
+  const avatarInputRef = useRef(null);
   const [bookingDate, setBookingDate] = useState('');
   const [bookingTime, setBookingTime] = useState('09:00');
   
@@ -212,6 +226,38 @@ export default function UserProfile({
     }
   };
 
+  const handleUploadAvatar = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (onUpdateProfile) {
+          onUpdateProfile({ avatar: reader.result });
+        }
+        if (showToast) showToast('Cập nhật ảnh đại diện thành công! 📸', 'success');
+        setShowAvatarModal(false);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleDeleteAvatar = () => {
+    if (onUpdateProfile) {
+      onUpdateProfile({ avatar: DEFAULT_AVATAR });
+    }
+    if (showToast) showToast('Đã xóa ảnh đại diện và đặt lại mặc định.', 'orange');
+    setShowAvatarModal(false);
+  };
+
+  const handleSelectPreset = (url) => {
+    if (onUpdateProfile) {
+      onUpdateProfile({ avatar: url });
+    }
+    if (showToast) showToast('Đã đổi ảnh đại diện phong cách mới! ✨', 'success');
+    setShowPresetPicker(false);
+    setShowAvatarModal(false);
+  };
+
   return (
     <div className="screen-content animate-slide-up" style={{ padding: 0, position: 'relative' }}>
       {/* Header with Back Button */}
@@ -225,7 +271,14 @@ export default function UserProfile({
         backdropFilter: 'var(--glass-blur)'
       }}>
         <button 
-          onClick={onClose}
+          type="button"
+          onClick={() => {
+            if (isEditing) {
+              setIsEditing(false);
+            } else {
+              onClose();
+            }
+          }}
           style={{
             background: 'rgba(255,255,255,0.05)',
             border: '1px solid var(--border-color)',
@@ -281,22 +334,80 @@ export default function UserProfile({
             )}
           </div>
 
-          {/* Avatar */}
-          <img 
-            src={profile.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=60'} 
-            alt={profile.name}
+          {/* Interactive Avatar Container */}
+          <div 
+            onClick={() => setShowAvatarModal(true)}
             style={{
-              width: '84px',
-              height: '84px',
-              borderRadius: '24px',
-              border: '4px solid var(--bg-dark)',
-              objectFit: 'cover',
               position: 'absolute',
               bottom: '-42px',
               left: '16px',
-              boxShadow: '0 8px 16px rgba(0,0,0,0.5)'
+              cursor: 'pointer',
+              zIndex: 10
             }}
-          />
+            title={profile.isSelf ? "Bấm để xem và chỉnh sửa ảnh hồ sơ" : "Xem ảnh hồ sơ"}
+          >
+            <img 
+              src={profile.avatar || DEFAULT_AVATAR} 
+              alt={profile.name}
+              style={{
+                width: '84px',
+                height: '84px',
+                borderRadius: '24px',
+                border: '4px solid var(--bg-dark)',
+                objectFit: 'cover',
+                boxShadow: '0 8px 16px rgba(0,0,0,0.5)',
+                display: 'block'
+              }}
+            />
+            {profile.isSelf && (
+              <div style={{
+                position: 'absolute',
+                bottom: '-2px',
+                right: '-2px',
+                background: 'var(--accent-green)',
+                color: '#000',
+                borderRadius: '50%',
+                width: '24px',
+                height: '24px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                border: '2px solid var(--bg-dark)',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.4)'
+              }}>
+                <Camera size={12} strokeWidth={2.5} />
+              </div>
+            )}
+          </div>
+
+          {/* Edit Profile Pencil Icon for Profile Owner */}
+          {profile.isSelf && !isEditing && (
+            <button
+              type="button"
+              onClick={() => setIsEditing(true)}
+              title="Chỉnh sửa thông tin cá nhân"
+              style={{
+                position: 'absolute',
+                bottom: '-38px',
+                right: '4px',
+                background: 'rgba(255, 255, 255, 0.08)',
+                border: '1px solid rgba(255, 255, 255, 0.18)',
+                width: '38px',
+                height: '38px',
+                borderRadius: '50%',
+                color: 'white',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                boxShadow: '0 4px 14px rgba(0,0,0,0.4)',
+                zIndex: 10
+              }}
+            >
+              <Pencil size={17} color="var(--accent-green)" />
+            </button>
+          )}
         </div>
 
         {/* Editing Mode Form */}
@@ -942,17 +1053,13 @@ export default function UserProfile({
               const isFriend = (friendsList || []).some(name => name === profile.name || name.replace(/\s*\(Bạn\)/g, '').trim() === cleanProfileName);
               const isSent = (sentRequests || []).some(name => name === profile.name || name.replace(/\s*\(Bạn\)/g, '').trim() === cleanProfileName);
 
+              if (profile.isSelf) {
+                return null;
+              }
+
               return (
                 <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
-                  {profile.isSelf ? (
-                    <button 
-                      className="btn-primary" 
-                      onClick={() => setIsEditing(true)}
-                      style={{ flex: 1 }}
-                    >
-                      Chỉnh sửa trang cá nhân
-                    </button>
-                  ) : profile.isPt ? (
+                  {profile.isPt ? (
                     <>
                       <button className="btn-primary" onClick={handleBook} style={{ flex: 1.2 }}>
                         Đặt lịch hẹn
@@ -1239,6 +1346,236 @@ export default function UserProfile({
           }}
           showToast={showToast}
         />
+      )}
+
+      {/* Avatar Profile Modal Overlay ("Ảnh hồ sơ") */}
+      {showAvatarModal && (
+        <div 
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background: 'rgba(8, 10, 14, 0.98)',
+            backdropFilter: 'blur(20px)',
+            zIndex: 3500,
+            borderRadius: '30px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            padding: '20px 16px 24px 16px',
+            overflow: 'hidden'
+          }}
+          onClick={() => setShowAvatarModal(false)}
+        >
+          {/* Top Bar */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', paddingBottom: '12px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>
+            <h3 style={{ fontSize: '15px', fontWeight: 800, color: 'white', margin: 0 }}>
+              Ảnh hồ sơ
+            </h3>
+            <button
+              type="button"
+              onClick={() => setShowAvatarModal(false)}
+              style={{
+                background: 'rgba(255, 255, 255, 0.08)',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+                color: 'white',
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer'
+              }}
+            >
+              <X size={16} />
+            </button>
+          </div>
+
+          {/* Center Circular Avatar Preview */}
+          <div 
+            style={{ 
+              flex: 1, 
+              display: 'flex', 
+              flexDirection: 'column', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              gap: '16px',
+              padding: '16px 0' 
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Big Circular Avatar Frame */}
+            <div style={{
+              width: '210px',
+              height: '210px',
+              borderRadius: '50%',
+              overflow: 'hidden',
+              border: '3px solid rgba(57, 255, 20, 0.5)',
+              boxShadow: '0 0 40px rgba(57, 255, 20, 0.15)',
+              position: 'relative',
+              background: '#121820'
+            }}>
+              <img 
+                src={profile.avatar || DEFAULT_AVATAR} 
+                alt={profile.name}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover'
+                }}
+              />
+            </div>
+
+            {/* Visibility Badge */}
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              background: 'rgba(255, 255, 255, 0.06)',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
+              padding: '5px 14px',
+              borderRadius: '20px',
+              fontSize: '11px',
+              color: 'var(--text-secondary)'
+            }}>
+              <Eye size={12} color="var(--accent-green)" />
+              <span>Mọi người trên FitMate</span>
+            </div>
+
+            {/* Presets List if showPresetPicker is true */}
+            {showPresetPicker && (
+              <div style={{
+                background: 'rgba(255, 255, 255, 0.04)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '14px',
+                padding: '10px',
+                display: 'flex',
+                gap: '8px',
+                maxWidth: '100%',
+                overflowX: 'auto',
+                scrollbarWidth: 'none'
+              }}>
+                {AVATAR_PRESETS.map((preset, idx) => (
+                  <img
+                    key={idx}
+                    src={preset}
+                    alt={`Preset ${idx}`}
+                    onClick={() => handleSelectPreset(preset)}
+                    style={{
+                      width: '42px',
+                      height: '42px',
+                      borderRadius: '50%',
+                      objectFit: 'cover',
+                      border: '2px solid rgba(57, 255, 20, 0.4)',
+                      cursor: 'pointer',
+                      flexShrink: 0
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Hidden File Input */}
+          <input 
+            type="file" 
+            ref={avatarInputRef} 
+            accept="image/*" 
+            style={{ display: 'none' }} 
+            onChange={handleUploadAvatar}
+          />
+
+          {/* Bottom Action Buttons (Chỉnh sửa, Cập nhật, Xóa) */}
+          <div 
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'space-between', 
+              width: '100%', 
+              paddingTop: '16px', 
+              borderTop: '1px solid rgba(255, 255, 255, 0.08)' 
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {profile.isSelf ? (
+              <>
+                <div style={{ display: 'flex', gap: '28px' }}>
+                  {/* Chỉnh sửa (Đổi mẫu preset) */}
+                  <button
+                    type="button"
+                    onClick={() => setShowPresetPicker(!showPresetPicker)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: showPresetPicker ? 'var(--accent-green)' : 'white',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '5px',
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <Edit3 size={18} />
+                    <span>Chỉnh sửa</span>
+                  </button>
+
+                  {/* Cập nhật (Upload ảnh từ máy) */}
+                  <button
+                    type="button"
+                    onClick={() => avatarInputRef.current?.click()}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'white',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '5px',
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <Camera size={18} color="var(--accent-green)" />
+                    <span>Cập nhật</span>
+                  </button>
+                </div>
+
+                {/* Xóa ảnh */}
+                <button
+                  type="button"
+                  onClick={handleDeleteAvatar}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--accent-orange)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '5px',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  <Trash2 size={18} />
+                  <span>Xóa</span>
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowAvatarModal(false)}
+                className="btn-secondary"
+                style={{ width: '100%', padding: '10px' }}
+              >
+                Đóng
+              </button>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

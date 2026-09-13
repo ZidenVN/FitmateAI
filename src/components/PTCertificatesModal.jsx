@@ -196,19 +196,28 @@ export default function PTCertificatesModal({
     <div style={{
       position: 'absolute',
       inset: 0,
+      width: '100%',
+      height: '100%',
       background: 'rgba(12, 15, 18, 0.98)',
       backdropFilter: 'blur(16px)',
       zIndex: 2500,
       borderRadius: '30px',
-      padding: '20px',
+      overflow: 'hidden',
       display: 'flex',
-      flexDirection: 'column',
-      gap: '14px',
-      overflowY: 'auto',
-      scrollbarWidth: 'none',
-      msOverflowStyle: 'none'
+      flexDirection: 'column'
     }}>
-      {/* Top Header */}
+      {/* Scrollable Content Container */}
+      <div style={{
+        flex: 1,
+        overflowY: 'auto',
+        padding: '20px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '14px',
+        scrollbarWidth: 'none',
+        msOverflowStyle: 'none'
+      }}>
+        {/* Top Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '10px', borderBottom: '1px solid var(--border-color)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <button
@@ -286,40 +295,6 @@ export default function PTCertificatesModal({
         )}
       </div>
 
-      {/* Status Banner */}
-      {status === 'verified' && (
-        <div style={{
-          background: 'linear-gradient(135deg, rgba(47, 128, 237, 0.15) 0%, rgba(57, 255, 20, 0.08) 100%)',
-          border: '1px solid rgba(47, 128, 237, 0.35)',
-          borderRadius: '14px',
-          padding: '12px 14px',
-          display: 'flex',
-          gap: '10px',
-          alignItems: 'center'
-        }}>
-          <div style={{
-            width: '36px',
-            height: '36px',
-            borderRadius: '10px',
-            background: '#2f80ed',
-            color: 'white',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0
-          }}>
-            <ShieldCheck size={20} />
-          </div>
-          <div style={{ flex: 1 }}>
-            <h4 style={{ fontSize: '12.5px', fontWeight: 800, color: 'white' }}>
-              Chứng chỉ đã được xác thực chính thức
-            </h4>
-            <p style={{ fontSize: '10.5px', color: 'rgba(255,255,255,0.8)', marginTop: '2px', lineHeight: '1.3' }}>
-              Toàn bộ văn bằng chuyên môn đã qua quy trình kiểm tra gắt gao của Ban Quản Trị FitMate và đối chiếu với cơ quan cấp phép.
-            </p>
-          </div>
-        </div>
-      )}
 
       {status === 'pending' && (
         <div style={{
@@ -746,65 +721,97 @@ export default function PTCertificatesModal({
                 <span style={{ fontSize: '10px', color: 'white', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
                   <Eye size={12} color="var(--accent-green)" /> Bấm để xem ảnh chứng chỉ gốc
                 </span>
-                <ExternalLink size={12} color="white" />
               </div>
             </div>
           </div>
         ))}
       </div>
+      {/* End List of Certificates */}
+      </div>
+      {/* End Scrollable Content Container */}
 
-      {/* Fullscreen Image Lightbox Modal */}
+      {/* Fullscreen Certificate Viewer Screen */}
       {previewImage && (
         <div 
           style={{
-            position: 'fixed',
+            position: 'absolute',
             inset: 0,
-            background: 'rgba(0, 0, 0, 0.95)',
-            zIndex: 4000,
+            width: '100%',
+            height: '100%',
+            background: '#090c10',
+            zIndex: 99999,
+            borderRadius: '30px',
             display: 'flex',
             flexDirection: 'column',
-            justifyContent: 'center',
-            alignItems: 'center',
-            padding: '20px'
+            justifyContent: 'space-between',
+            padding: '20px 16px 24px 16px',
+            boxSizing: 'border-box'
           }}
           onClick={() => setPreviewImage(null)}
         >
-          <div style={{ position: 'relative', maxWidth: '95%', maxHeight: '90%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <button
-              onClick={() => setPreviewImage(null)}
-              style={{
-                position: 'absolute',
-                top: '-40px',
-                right: '0',
-                background: 'rgba(255, 255, 255, 0.15)',
-                border: 'none',
-                color: 'white',
-                width: '36px',
-                height: '36px',
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer'
-              }}
-            >
-              <X size={20} />
-            </button>
+          {/* Top Navigation Bar */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', width: '100%', paddingBottom: '10px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <button
+                type="button"
+                onClick={() => setPreviewImage(null)}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.08)',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  color: 'white',
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer'
+                }}
+              >
+                <ArrowLeft size={16} />
+              </button>
+              <span style={{ fontSize: '13px', fontWeight: 800, color: 'white' }}>
+                Ảnh Chứng Chỉ Gốc
+              </span>
+            </div>
+          </div>
+
+          {/* Certificate Image Canvas */}
+          <div 
+            style={{ 
+              flex: 1, 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              padding: '16px 0',
+              overflow: 'hidden'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
             <img
               src={previewImage}
               alt="Bằng cấp chứng chỉ"
               style={{
                 maxWidth: '100%',
-                maxHeight: '80vh',
-                borderRadius: '12px',
-                border: '2px solid rgba(255, 255, 255, 0.2)',
+                maxHeight: '440px',
+                width: 'auto',
+                height: 'auto',
+                borderRadius: '14px',
+                border: '1.5px solid rgba(47, 128, 237, 0.4)',
                 objectFit: 'contain',
-                boxShadow: '0 12px 36px rgba(0,0,0,0.8)'
+                boxShadow: '0 24px 60px rgba(0,0,0,0.95)',
+                background: '#000'
               }}
-              onClick={(e) => e.stopPropagation()}
             />
-            <p style={{ color: 'var(--text-secondary)', fontSize: '11px', marginTop: '10px' }}>
-              Ảnh chứng chỉ xác thực của HLV {cleanProfileName}
+          </div>
+
+          {/* Bottom Info Footer */}
+          <div style={{ textAlign: 'center', width: '100%', paddingTop: '10px', borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
+            <p style={{ color: 'white', fontSize: '12px', fontWeight: 700 }}>
+              Hồ sơ chứng chỉ xác thực của HLV {cleanProfileName}
+            </p>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '10.5px', marginTop: '3px' }}>
+              Chạm vào bất kỳ đâu hoặc bấm nút Quay lại để đóng
             </p>
           </div>
         </div>
