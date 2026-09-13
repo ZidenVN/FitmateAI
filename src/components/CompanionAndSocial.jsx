@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, MessageSquare, Users, Heart, Flame, Smile, User, Plus, Image, X, ArrowLeft, MessageCircle, Menu, Edit2, Check } from 'lucide-react';
+import { Send, MessageSquare, Users, Heart, Flame, Smile, User, Plus, Image, X, ArrowLeft, MessageCircle, Menu, Edit2, Check, PenSquare, Sparkles } from 'lucide-react';
+import CreatePostModal from './CreatePostModal';
 
 export default function CompanionAndSocial({ 
   aiChats, 
@@ -12,7 +13,8 @@ export default function CompanionAndSocial({
   onOpenProfile,
   rewardPoints,
   setRewardPoints,
-  showToast
+  showToast,
+  myProfile
 }) {
   const [activeSubTab, setActiveSubTab] = useState('companion'); // 'companion' or 'social'
   const [inputText, setInputText] = useState('');
@@ -47,12 +49,51 @@ export default function CompanionAndSocial({
   };
 
   // Mini Social Network States
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [newPostText, setNewPostText] = useState('');
   const [selectedFileUrl, setSelectedFileUrl] = useState('');
   const [activePostId, setActivePostId] = useState(null); // ID of post in detailed comment view
   const [commentText, setCommentText] = useState('');
   const [isQualityPost, setIsQualityPost] = useState(false);
   const fileInputRef = useRef(null);
+
+  const handleCreatePostFromModal = (postData) => {
+    const authorName = myProfile?.name || 'Hùng (Bạn)';
+    const authorRole = myProfile?.role || (myProfile?.isPt ? 'Huấn luyện viên' : 'Hội viên');
+    const authorAvatar = myProfile?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=60';
+
+    const newPost = {
+      id: Date.now(),
+      author: authorName,
+      role: authorRole,
+      time: 'Vừa xong',
+      avatar: authorAvatar,
+      content: postData.content,
+      image: postData.image || null,
+      link: postData.link || null,
+      visibility: postData.visibility || 'public',
+      reactions: { love: 0, fire: 0, haha: 0 },
+      userReacted: { love: false, fire: false, haha: false },
+      isKnowledge: !!postData.isKnowledge,
+      isQuality: false,
+      pointsAwarded: 0,
+      comments: []
+    };
+
+    setPosts([newPost, ...posts]);
+
+    if (postData.isKnowledge) {
+      if (showToast) {
+        showToast('Đã đăng bài viết kiến thức! Đang đợi cộng đồng tích lũy tương tác để nhận thưởng... ⭐', 'success');
+      }
+    } else {
+      if (showToast) {
+        showToast('Đã chia sẻ bài viết lên bảng tin cộng đồng! 🎉', 'success');
+      }
+    }
+
+    if (onCompleteTask) onCompleteTask(3);
+  };
 
   // Get active chat from parent prop
   const currentChat = aiChats.find(chat => chat.id === activeChatId) || aiChats[0];
@@ -978,213 +1019,128 @@ export default function CompanionAndSocial({
           ) : (
             /* Mạng Xã Hội Mini View */
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', height: '520px', overflowY: 'auto' }}>
-              {/* Community Civil Code Rules Banner */}
-              <div className="glass-card" style={{ 
-                background: 'linear-gradient(135deg, rgba(47, 128, 237, 0.05) 0%, rgba(0, 0, 0, 0) 100%)',
-                borderColor: 'rgba(47, 128, 237, 0.2)',
-                padding: '12px 14px',
-                borderRadius: '16px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '4px'
-              }}>
-                <h5 style={{ fontSize: '12.5px', fontWeight: 700, color: '#2f80ed', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
-                  📜 Quy Tắc Ứng Xử Cộng Đồng & Nhận Thưởng
-                </h5>
-                <p style={{ fontSize: '10px', color: 'var(--text-secondary)', lineHeight: '1.4', margin: 0 }}>
-                  • Hãy luôn thảo luận văn hóa, lịch sự và tôn trọng lẫn nhau.
-                  <br />• Các bình luận/bài viết thô tục, công kích sẽ <strong>bị AI tự động ẩn</strong>.
-                  <br />• Đăng ký <strong>kiến thức chất lượng</strong> để nhận tới <strong>+10 xu</strong> khi đạt 50 tương tác từ cộng đồng!
-                </p>
-              </div>
-
-              {/* Post Creation Box */}
-              <form onSubmit={handleCreatePost} className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              {/* Clean Post Creation Trigger Box */}
+              <div 
+                className="glass-card" 
+                onClick={() => setShowCreateModal(true)}
+                style={{ 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  gap: '10px', 
+                  padding: '12px 14px',
+                  cursor: 'pointer',
+                  background: 'rgba(255, 255, 255, 0.02)',
+                  borderColor: 'var(--border-color)',
+                  borderRadius: '16px',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                {/* Top Row: Avatar + Wide Textbox */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%' }}>
                   <div 
                     style={{
-                      width: '32px',
-                      height: '32px',
+                      width: '36px',
+                      height: '36px',
                       borderRadius: '50%',
                       background: 'rgba(255, 255, 255, 0.1)',
                       display: 'flex',
                       justifyContent: 'center',
                       alignItems: 'center',
-                      color: 'var(--accent-green)',
-                      cursor: 'pointer'
+                      flexShrink: 0,
+                      overflow: 'hidden',
+                      border: '1.5px solid rgba(255,255,255,0.1)'
                     }}
-                    onClick={() => onOpenProfile({
-                      name: 'Hùng (Bạn)',
-                      role: 'Hội viên',
-                      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=60',
-                      isPt: false,
-                      isSelf: true
-                    })}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (onOpenProfile) {
+                        onOpenProfile({
+                          name: myProfile?.name || 'Hùng (Bạn)',
+                          role: myProfile?.role || 'Hội viên',
+                          avatar: myProfile?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=60',
+                          isPt: !!myProfile?.isPt,
+                          isSelf: true
+                        });
+                      }
+                    }}
                   >
                     <img 
-                      src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=60" 
+                      src={myProfile?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=60'} 
                       alt="Current User" 
-                      style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     />
                   </div>
-                  <input 
-                    type="text"
-                    placeholder="Hôm nay bạn tập thế nào? Chia sẻ nhé..."
-                    value={newPostText}
-                    onChange={(e) => setNewPostText(e.target.value)}
-                    style={{
-                      flex: 1,
-                      background: 'transparent',
-                      border: 'none',
-                      outline: 'none',
-                      color: 'white',
-                      fontSize: '13px'
-                    }}
-                  />
+
+                  <div style={{
+                    flex: 1,
+                    background: 'rgba(255, 255, 255, 0.04)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '12px',
+                    padding: '9px 12px',
+                    color: 'var(--text-secondary)',
+                    fontSize: '12px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}>
+                    <span>Hôm nay bạn tập thế nào? Chia sẻ nhé...</span>
+                    <PenSquare size={13} color="var(--accent-green)" />
+                  </div>
                 </div>
 
-                {/* Attached Image Preview */}
-                {selectedFileUrl && (
-                  <div style={{ position: 'relative', width: 'fit-content', marginTop: '6px' }}>
-                    <img 
-                      src={selectedFileUrl} 
-                      alt="Attachment preview" 
-                      style={{
-                        maxHeight: '120px',
-                        borderRadius: '12px',
-                        border: '1px solid var(--border-color)',
-                        display: 'block'
-                      }}
-                    />
-                    <button
-                      type="button"
-                      onClick={handleRemoveImage}
-                      style={{
-                        position: 'absolute',
-                        top: '4px',
-                        right: '4px',
-                        width: '24px',
-                        height: '24px',
-                        borderRadius: '50%',
-                        background: 'rgba(0,0,0,0.6)',
-                        color: 'white',
-                        border: 'none',
-                        display: 'flex',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      <X size={12} />
-                    </button>
-                  </div>
-                )}
-
-                {/* Toggle switch for quality post */}
+                {/* Bottom Row: Quick actions & Submit button */}
                 <div style={{
                   display: 'flex',
-                  alignItems: 'center',
                   justifyContent: 'space-between',
-                  background: isQualityPost ? 'rgba(255, 215, 0, 0.04)' : 'rgba(255, 255, 255, 0.01)',
-                  border: isQualityPost ? '1px solid rgba(255, 215, 0, 0.25)' : '1px solid var(--border-color)',
-                  borderRadius: '12px',
-                  padding: '8px 12px',
-                  marginTop: '4px',
-                  transition: 'all 0.25s ease'
-                }}>
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <span style={{ fontSize: '15px' }}>📚</span>
-                    <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
-                      <span style={{ fontSize: '11px', fontWeight: 700, color: isQualityPost ? '#ffd700' : 'var(--text-primary)' }}>
-                        Đăng ký bài viết kiến thức
-                      </span>
-                      <span style={{ fontSize: '9px', color: 'var(--text-secondary)' }}>
-                        Nhận xu dựa trên lượt tương tác (5 tương tác = 1 xu) sau khi đạt 50 tương tác.
-                      </span>
-                    </div>
-                  </div>
-                  
-                  {/* Custom Toggle Switch */}
-                  <div 
-                    onClick={() => setIsQualityPost(!isQualityPost)}
-                    style={{
-                      width: '36px',
-                      height: '20px',
-                      borderRadius: '10px',
-                      background: isQualityPost ? 'var(--accent-green)' : 'rgba(255,255,255,0.1)',
-                      position: 'relative',
-                      cursor: 'pointer',
-                      transition: 'background 0.25s ease',
-                      flexShrink: 0
-                    }}
-                  >
-                    <div style={{
-                      width: '16px',
-                      height: '16px',
-                      borderRadius: '50%',
-                      background: isQualityPost ? '#12151c' : 'white',
-                      position: 'absolute',
-                      top: '2px',
-                      left: isQualityPost ? '18px' : '2px',
-                      transition: 'left 0.25s ease'
-                    }} />
-                  </div>
-                </div>
-
-                {/* Bottom Actions of post creator */}
-                <div style={{ 
-                  display: 'flex', 
-                  justifyContent: 'space-between', 
                   alignItems: 'center',
-                  borderTop: '1px solid var(--border-color)', 
-                  paddingTop: '8px' 
+                  paddingTop: '6px',
+                  borderTop: '1px solid rgba(255, 255, 255, 0.04)'
                 }}>
-                  <div>
-                    <input 
-                      type="file" 
-                      accept="image/*" 
-                      onChange={handleImageChange}
-                      ref={fileInputRef}
-                      id="post-image-uploader"
-                      style={{ display: 'none' }}
-                    />
-                    <label 
-                      htmlFor="post-image-uploader"
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowCreateModal(true);
+                      }}
                       style={{
+                        background: 'rgba(57, 255, 20, 0.06)',
+                        border: '1px solid rgba(57, 255, 20, 0.2)',
+                        color: 'var(--accent-green)',
+                        padding: '5px 10px',
+                        borderRadius: '6px',
+                        fontSize: '11px',
+                        fontWeight: 600,
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '4px',
-                        fontSize: '11px',
-                        color: 'var(--accent-green)',
-                        background: 'rgba(57, 255, 20, 0.05)',
-                        padding: '6px 12px',
-                        borderRadius: '8px',
-                        border: '1px solid rgba(57, 255, 20, 0.1)',
+                        gap: '5px',
                         cursor: 'pointer'
                       }}
                     >
-                      <Image size={14} />
-                      Thêm ảnh
-                    </label>
+                      <Image size={13} /> Thêm ảnh / Media
+                    </button>
                   </div>
 
                   <button 
-                    type="submit"
-                    disabled={!newPostText.trim() && !selectedFileUrl}
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowCreateModal(true);
+                    }}
                     className="btn-primary" 
                     style={{ 
-                      width: 'auto', 
-                      padding: '6px 16px', 
-                      borderRadius: '10px', 
+                      padding: '5px 14px', 
+                      borderRadius: '8px', 
                       fontSize: '11px',
-                      opacity: (newPostText.trim() || selectedFileUrl) ? 1 : 0.5
+                      fontWeight: 700,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px'
                     }}
                   >
-                    <Plus size={12} />
-                    Đăng bài
+                    <Plus size={12} /> Đăng bài
                   </button>
                 </div>
-              </form>
+              </div>
 
               {/* Social Feed List */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -1234,7 +1190,15 @@ export default function CompanionAndSocial({
                             </span>
                           )}
                         </div>
-                        <div style={{ fontSize: '9px', color: 'var(--text-secondary)' }}>{post.role} • {post.time}</div>
+                        <div style={{ fontSize: '9px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <span>{post.role}</span>
+                          <span>•</span>
+                          <span>{post.time}</span>
+                          <span>•</span>
+                          <span>
+                            {post.visibility === 'friends' ? '👥 Bạn bè' : post.visibility === 'private' ? '🔒 Chỉ mình tôi' : '🌐 Công khai'}
+                          </span>
+                        </div>
                       </div>
                     </div>
 
@@ -1406,6 +1370,19 @@ export default function CompanionAndSocial({
             </div>
           )}
         </>
+      )}
+
+      {/* Create Post Modal Overlay */}
+      {showCreateModal && (
+        <CreatePostModal
+          onClose={() => setShowCreateModal(false)}
+          onCreatePost={handleCreatePostFromModal}
+          myProfile={myProfile}
+          showToast={showToast}
+          initialText={newPostText}
+          initialImage={selectedFileUrl}
+          initialIsKnowledge={isQualityPost}
+        />
       )}
     </div>
   );

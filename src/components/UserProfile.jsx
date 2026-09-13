@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { ArrowLeft, MessageCircle, UserPlus, UserX, Star, Award, Heart, Flame, Smile, Check, X, HeartPulse, ArrowRight, Clock } from 'lucide-react';
+import { ArrowLeft, MessageCircle, UserPlus, UserX, Star, Award, Heart, Flame, Smile, Check, X, HeartPulse, ArrowRight, Clock, ShieldCheck } from 'lucide-react';
 import ChuyenSau from './ChuyenSau';
+import PTCertificatesModal from './PTCertificatesModal';
 
 export default function UserProfile({ 
   profile, 
@@ -32,6 +33,7 @@ export default function UserProfile({
 
   const [isEditing, setIsEditing] = useState(false);
   const [showChuyenSau, setShowChuyenSau] = useState(false);
+  const [showCertificates, setShowCertificates] = useState(false);
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [bookingDate, setBookingDate] = useState('');
   const [bookingTime, setBookingTime] = useState('09:00');
@@ -704,28 +706,69 @@ export default function UserProfile({
             {/* User Stats & Description */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '14px' }}>
               <div>
-                <h2 className="title-large" style={{ fontSize: '20px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  {profile.name}
-                  {profile.isVerified && (
-                    <span 
-                      title="HLV đã xác thực chuyên môn" 
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <h2 className="title-large" style={{ fontSize: '20px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    {profile.name}
+                    {profile.isVerified && (
+                      <span 
+                        title="HLV đã xác thực chuyên môn" 
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          background: '#2f80ed',
+                          borderRadius: '50%',
+                          width: '16px',
+                          height: '16px',
+                          color: 'white',
+                          padding: '2px'
+                        }}
+                      >
+                        <Check size={11} strokeWidth={4} />
+                      </span>
+                    )}
+                  </h2>
+
+                  {/* Certificate Button for PT */}
+                  {profile.isPt && (
+                    <button
+                      type="button"
+                      onClick={() => setShowCertificates(true)}
                       style={{
                         display: 'inline-flex',
                         alignItems: 'center',
-                        justifyContent: 'center',
-                        background: '#2f80ed',
-                        borderRadius: '50%',
-                        width: '15px',
-                        height: '15px',
-                        color: 'white',
-                        padding: '2.5px'
+                        gap: '4px',
+                        padding: '3px 8px',
+                        borderRadius: '8px',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        background: profile.isVerified 
+                          ? 'rgba(47, 128, 237, 0.12)' 
+                          : profile.certificateStatus === 'pending'
+                          ? 'rgba(255, 179, 0, 0.15)'
+                          : 'rgba(255, 255, 255, 0.06)',
+                        border: '1px solid',
+                        borderColor: profile.isVerified 
+                          ? 'rgba(47, 128, 237, 0.4)' 
+                          : profile.certificateStatus === 'pending'
+                          ? 'rgba(255, 179, 0, 0.4)'
+                          : 'var(--border-color)',
+                        color: profile.isVerified 
+                          ? '#2f80ed' 
+                          : profile.certificateStatus === 'pending'
+                          ? '#ffb300'
+                          : 'var(--text-secondary)',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        boxShadow: '0 2px 6px rgba(0,0,0,0.2)'
                       }}
                     >
-                      <Check size={10} strokeWidth={4} />
-                    </span>
+                      <Award size={13} color={profile.isVerified ? '#2f80ed' : profile.certificateStatus === 'pending' ? '#ffb300' : 'var(--text-secondary)'} />
+                      Chứng chỉ {profile.isVerified ? '✓' : (profile.certificateStatus === 'pending' ? '⏳' : '')}
+                    </button>
                   )}
-                </h2>
-                <p className="subtitle" style={{ color: 'var(--accent-green)', fontWeight: 600 }}>{profile.role}</p>
+                </div>
+                <p className="subtitle" style={{ color: 'var(--accent-green)', fontWeight: 600, marginTop: '2px' }}>{profile.role}</p>
               </div>
 
               <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
@@ -752,6 +795,35 @@ export default function UserProfile({
                       </span>
                     ))}
                   </div>
+
+                  {/* Certificate Quick Link Banner */}
+                  <button
+                    type="button"
+                    onClick={() => setShowCertificates(true)}
+                    style={{
+                      marginTop: '6px',
+                      padding: '8px 10px',
+                      borderRadius: '8px',
+                      background: 'rgba(47, 128, 237, 0.08)',
+                      border: '1px solid rgba(47, 128, 237, 0.25)',
+                      color: '#2f80ed',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      cursor: 'pointer',
+                      width: '100%',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Award size={14} /> Hồ sơ Bằng cấp & Chứng chỉ HLV
+                    </span>
+                    <span style={{ fontSize: '10px', color: profile.isVerified ? 'var(--accent-green)' : '#ffb300', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                      {profile.isVerified ? 'Đã kiểm định ✓' : (profile.certificateStatus === 'pending' ? 'Đang kiểm định ⏳' : 'Chưa kiểm định')} <ArrowRight size={12} />
+                    </span>
+                  </button>
                 </div>
               )}
             </div>
@@ -1152,6 +1224,21 @@ export default function UserProfile({
             showToast={showToast} 
           />
         </div>
+      )}
+
+      {/* PT Certificates Modal Overlay */}
+      {showCertificates && (
+        <PTCertificatesModal
+          profile={profile}
+          isSelf={profile.isSelf}
+          onClose={() => setShowCertificates(false)}
+          onUpdateVerification={(updatedVerification) => {
+            if (onUpdateProfile) {
+              onUpdateProfile(updatedVerification);
+            }
+          }}
+          showToast={showToast}
+        />
       )}
     </div>
   );

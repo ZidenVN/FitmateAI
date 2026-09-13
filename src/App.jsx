@@ -138,8 +138,28 @@ const DEFAULT_USERS = {
       isSelf: true,
       spec: ['Calisthenics', 'Giảm cân nhanh', 'Sức bền'],
       exp: '3 năm kinh nghiệm',
-      price: '300.000đ/buổi',
       isVerified: true,
+      certificateStatus: 'verified',
+      certificates: [
+        {
+          id: 'cert_1',
+          name: 'Chứng chỉ Huấn Luyện Viên Quốc Tế (NASM - CPT)',
+          organization: 'National Academy of Sports Medicine (NASM)',
+          issueDate: '15/06/2023',
+          code: 'NASM-CPT-892301',
+          type: 'Chứng chỉ quốc tế',
+          image: 'https://images.unsplash.com/photo-1589330694653-ded6df03f754?w=1000&auto=format&fit=crop&q=80'
+        },
+        {
+          id: 'cert_2',
+          name: 'Chứng chỉ Calisthenics Master Trainer Level 3',
+          organization: 'World Street Workout & Calisthenics Federation (WSWCF)',
+          issueDate: '10/01/2024',
+          code: 'WSWCF-VN-2024-04',
+          type: 'Chứng nhận chuyên môn',
+          image: 'https://images.unsplash.com/photo-1606326608606-aa0b62935f2b?w=1000&auto=format&fit=crop&q=80'
+        }
+      ],
       medicalCondition: 'Không có',
       allergies: 'Không có',
       trainingDays: ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'],
@@ -884,6 +904,9 @@ export default function App() {
       avatar: isPt ? 'https://images.unsplash.com/photo-1548690312-e3b507d8c110?w=150&auto=format&fit=crop&q=60' : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=60',
       isPt: isPt,
       isSelf: true,
+      isVerified: false,
+      certificateStatus: isPt ? 'unverified' : null,
+      certificates: [],
       medicalCondition: 'Không có',
       allergies: 'Không có',
       trainingDays: isPt ? ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'] : ['Thứ 2', 'Thứ 4', 'Thứ 6'],
@@ -1398,6 +1421,7 @@ export default function App() {
             rewardPoints={rewardPoints}
             setRewardPoints={setRewardPoints}
             showToast={showToast}
+            myProfile={myProfile}
           />
         );
       case 'messenger':
